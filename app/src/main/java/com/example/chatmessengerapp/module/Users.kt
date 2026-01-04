@@ -1,11 +1,11 @@
 package com.example.chatmessengerapp.module
 
  data class Users (
-     val userid: String,
-     val status: String,
-     val imageUrl: String,
-     val username: String,
-     val useremail: String,
+     val userid: String? = "",
+     val status: String? = "",
+     val imageUrl: String? = "",
+     val username: String? = "",
+     val useremail: String? = "",
 
      ): Parcelable{
      constructor(parcel: Parcel) : this(
