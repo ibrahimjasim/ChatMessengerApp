@@ -12,7 +12,9 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
+import com.example.chatmessengerapp.Adapter.MessageAdapter
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.databinding.FragmentChatBinding
@@ -31,6 +33,7 @@ class ChatFragment : Fragment() {
      private lateinit var tvUserName: TextView
      private lateinit var tvStatus: TextView
      private lateinit var backbtn : ImageView
+     private lateinit var messageAdapter: MessageAdapter
 
 
 
@@ -80,4 +83,19 @@ class ChatFragment : Fragment() {
           initRecyclerView(it)
       }
   }
+
+    private fun initRecyclerView(it: List<Messages>) {
+
+        messageAdapter = MessageAdapter()
+        val layoutManager = LinearLayoutManager(context)
+        chatbidning.messagesrecyclerView.layout = layoutManager
+        layoutManager.stackFromEnd = true
+        messageAdapter.setMessageList(it)
+        messageAdapter.notifyDataSetChanged()
+        chatbindning.messagesrecyclerView.adapter = messageAdapter
+
+}
+
+
+
 }
