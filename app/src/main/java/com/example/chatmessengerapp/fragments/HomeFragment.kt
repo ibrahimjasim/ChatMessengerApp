@@ -40,7 +40,7 @@ class HomeFragment : Fragment(), OnItemClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        userViewModel = ViewModelProvider(this).get(ChatAppViewModel::class.java)
+
         fbauth = FirebaseAuth.getInstance()
         useradapter = UserAdapter()
 
@@ -56,7 +56,10 @@ class HomeFragment : Fragment(), OnItemClickListener {
         userViewModel.getUsers().observe(viewLifecycleOwner, Observer {
             // Use correct method name
             useradapter.setList(it)
+            rvUsers.adapter = useradapter
         })
+
+        useradapter.setOnUserClickListener(this)
 
         homebinding.logOut.setOnClickListener {
             fbauth.signOut()
@@ -75,5 +78,10 @@ class HomeFragment : Fragment(), OnItemClickListener {
 
     override fun onUserSelected(position: Int, users: Users) {
         // TODO: Handle user click to navigate to chat screen
+       val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(users)
+        view?.findNavController()?.navigate(action)
+       Log.e("HOMEFRAGMENT", "ClickedOn${users.username}")
     }
+
+
 }
