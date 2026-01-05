@@ -46,7 +46,7 @@ class MessageRepository {
                             messageModel.let {
                                 Messages
 
-                                messageList.add(it!!)
+                                messageList.add(it)
                             }
                         }
 
