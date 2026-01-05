@@ -77,8 +77,37 @@ class ChatAppViewModel : ViewModel(){
             mysharedPrefs.setValue("friendname", friendnamesplit)
             mysharedPrefs.setValue("friendimage", friendimage)
 
+            firestore.collection("Messages").document(uniqueId.toString()).collection("chats")
+                .document(Utils.getTime()).set(hashMap).addOnCompleteListener { taskmessage ->
+
+                // all work for recent chatslist
+                if (taskmessage.isSuccessful) {
+                    val setHashap = hashMapOf<String, Any>(
+                        "friendid" to receiver,
+                        "time" to Utils.getTime(),
+                        "sender" to Utils.getUidLoggedIn(),
+                        "message" to message.value!!,
+                        "friendsimage" to friendimage,
+                        "name" to friendname,
+                        "person" to "you"
+                    )
+
+                    firestore.collection("Conversation${Utils.getUidLoggedIn()}").document(receiver)
+                        .set(setHashap)
+
+                    firestore.collection("Conversation${receiver}").document(Utils.getUidLoggedIn())
+                        .update(
+                            "message",
+                            message.value!!,
+                            "time",
+                            Utils.getTime(),
+                            "person",
+                            name.value!!
+                        )
 
 
-        }
+
+
+                }
 
 }
