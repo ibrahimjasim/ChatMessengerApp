@@ -15,7 +15,6 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:padding="8dp"
-            android:fontFamily="@font/nunito_bold"
             android:id="@+id/show_message"
             android:text="Hello"
             android:visibility="visible"
@@ -28,7 +27,6 @@
             android:text="14:00"
             android:layout_weight="1"
 
-            android:fontFamily="@font/nunito"
             android:id="@+id/timeView"
             android:textStyle="italic"
             android:layout_marginTop="10dp"

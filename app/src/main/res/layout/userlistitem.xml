@@ -32,8 +32,7 @@
         android:textColor="@color/black"
         android:layout_below="@id/statusOnline"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="52dp"
-        android:fontFamily="@font/nunito_bold"/>
+        android:layout_marginTop="52dp"/>
 
 
 </RelativeLayout>
