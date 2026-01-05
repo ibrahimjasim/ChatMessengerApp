@@ -18,10 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatMessengerApp">
         <activity
-            android:name=".SignUpActivity"
+            android:name=".activities.SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".SignInActivity"
+            android:name=".activities.SignInActivity"
             android:exported="false" />
 
         <intent-filter>
