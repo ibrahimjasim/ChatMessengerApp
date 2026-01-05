@@ -3,8 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("com.google.gms.google-services")
-
-
+    id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -61,7 +60,6 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
 
     // Add the dependency for the Firebase Authentication library
-    // When using the BoM, you don't specify versions in Firebase library dependencies
     implementation("com.google.firebase:firebase-auth-ktx")
 
     // Also add the dependency for the Cloud Firestore library
@@ -69,20 +67,9 @@ dependencies {
 
     implementation("com.google.firebase:firebase-analytics")
 
-
     implementation ("de.hdodenhof:circleimageview:3.1.0")
 
     //Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     kapt("com.github.bumptech.glide:compiler:4.12.0")
-
-
-
-
-
-
-
-
-
-
 }
