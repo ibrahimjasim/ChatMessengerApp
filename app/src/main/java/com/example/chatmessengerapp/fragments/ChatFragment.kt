@@ -6,9 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import  androidx.appcompat.widget. Toolbar
+import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
+import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.databinding.FragmentChatBinding
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
