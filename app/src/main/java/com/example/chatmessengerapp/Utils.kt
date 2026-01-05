@@ -4,9 +4,9 @@ import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
 import java.util.Date
 
-class Utils {
+object Utils {
 
-    companion object {
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
         private val auth = FirebaseAuth.getInstance()
 

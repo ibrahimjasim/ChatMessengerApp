@@ -21,7 +21,9 @@ class ChatAppViewModel : ViewModel(){
     private val firestore = FirebaseFirestore.getInstance()
 
     val usersRepo = UserRepository()
-    val messagesRepo = MessageRepository()
+    val messageRepo = MessageRepository()
+    val recentChatRepo = ChatListRepository()
+
 
 
     init {
