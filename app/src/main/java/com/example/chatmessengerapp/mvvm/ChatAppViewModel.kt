@@ -23,16 +23,11 @@ class ChatAppViewModel : ViewModel(){
 
     init {
         getCurrentUser()
+    }
 
-}
 
-
-    fun getUser() : LiveData<List<Users>> {
-
-        val usersRepo = null
+    fun getUsers() : LiveData<List<Users>> {
         return usersRepo.getUser()
-
-
     }
 
 
@@ -44,7 +39,7 @@ class ChatAppViewModel : ViewModel(){
             .addSnapshotListener { value, error ->
 
 
-                if (value!!.exists() && value.data != null) {
+                if (value != null && value.exists() && value.data != null) {
 
                     val users = value.toObject(Users::class.java)
 
@@ -60,3 +55,4 @@ class ChatAppViewModel : ViewModel(){
             }
 
     }
+}
