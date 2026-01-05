@@ -12,5 +12,23 @@ class Utils {
             // If auth.currentUser is not null, return its uid. Otherwise, return an empty string.
             return auth.currentUser?.uid ?: ""
         }
+
+
+        fun getTime(): String {
+
+
+            val formatter = SimpleDateFormat("HH:mm:ss")
+            val date: Date = Date(System.currentTimeMillis())
+            val stringdate = formatter.format(date)
+
+
+            return stringdate
+
+
+
     }
+
+
+
+
 }
