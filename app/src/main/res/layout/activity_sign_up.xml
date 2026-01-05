@@ -26,7 +26,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="40dp"
-                    android:fontFamily="@font/nunito_bold"
                     android:gravity="start"
                     android:text="Sign up "
                     android:textSize="30sp"
