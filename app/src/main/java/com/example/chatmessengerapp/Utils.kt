@@ -1,6 +1,8 @@
 package com.example.chatmessengerapp
 
 import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class Utils {
 
