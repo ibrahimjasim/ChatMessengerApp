@@ -1,13 +1,16 @@
 package com.example.chatmessengerapp.module
 
- data class Users (
+import android.os.Parcel
+import android.os.Parcelable
+
+data class Users (
      val userid: String? = "",
      val status: String? = "",
      val imageUrl: String? = "",
      val username: String? = "",
      val useremail: String? = "",
 
-     ): Parcelable{
+     ): Parcelable {
      constructor(parcel: Parcel) : this(
          parcel.readString(),
          parcel.readString(),
