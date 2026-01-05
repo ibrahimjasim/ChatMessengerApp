@@ -1,6 +1,8 @@
 package com.example.chatmessengerapp.mvvm
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.example.chatmessengerapp.module.Users
 
 class ChatAppViewModel {
 
@@ -11,7 +13,7 @@ class ChatAppViewModel {
     val usersRepo = UserRepository()
 
 
-    fun getUser() : LiveData<List<Users>>{
+    fun getUser() : LiveData<List<Users>> {
 
         return usersRepo.getUser()
 
