@@ -1,18 +1,14 @@
-@file:Suppress("DEPRECATION")
-
-package com.example.chatmessengerapp
+package com.example.chatmessengerapp.activities
 
 import android.app.ProgressDialog
 import android.content.Intent
 import android.os.Bundle
-import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
+import com.example.chatmessengerapp.MainActivity
 import com.example.chatmessengerapp.R
+import com.example.chatmessengerapp.activities.SignUpActivity
 import com.example.chatmessengerapp.databinding.ActivitySignInBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -106,7 +102,7 @@ class SignInActivity : AppCompatActivity() {
 
                 when (exception) {
 
-                    is FirebaseAuthInvalidCredentialsException->{
+                    is FirebaseAuthInvalidCredentialsException ->{
                         Toast.makeText(this,"Error", Toast.LENGTH_SHORT).show()
 
 
@@ -142,5 +138,3 @@ class SignInActivity : AppCompatActivity() {
 
 
 }
-
-

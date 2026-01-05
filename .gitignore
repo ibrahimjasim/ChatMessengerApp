@@ -15,4 +15,6 @@
 .jks
 .keystone
 .keystore
+     # Google Services file
+     /app/google-services.json
 

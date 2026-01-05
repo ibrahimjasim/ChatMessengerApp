@@ -70,7 +70,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="40dp"
-                android:fontFamily="@font/nunito_bold"
                 android:gravity="start"
                 android:text="Update Your Profile"
                 android:textSize="25sp"
@@ -96,7 +95,6 @@
                     android:ems="10"
                     android:text="@={viewModel.name}"
                     android:hint="Name"
-                    android:fontFamily="@font/nunito_bold"
                     android:importantForAutofill="no"
                     android:inputType="textCapWords"
                     android:maxLength="25"
@@ -114,7 +112,6 @@
                 android:layout_marginTop="20dp"
                 android:backgroundTint="#191970"
                 android:text="Update"
-                android:fontFamily="@font/nunito_bold"
                 android:layout_gravity="center"
                 android:textSize="16sp"
                 />

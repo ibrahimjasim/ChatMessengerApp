@@ -29,7 +29,6 @@
                 android:layout_height="wrap_content"
                 android:text="Chat App"
                 android:layout_gravity="center"
-                android:fontFamily="@font/nunito_bold"
                 android:textColor="#FFFFFF"
                 android:textSize="20sp"/>
 

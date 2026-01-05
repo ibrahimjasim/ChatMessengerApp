@@ -58,8 +58,7 @@
                     android:layout_marginTop="8dp"
                     android:layout_marginLeft="10dp"
                     android:textColor="#FFFFFF"
-                    android:id="@+id/chatUserName"
-                    android:fontFamily="@font/nunito_bold"/>
+                    android:id="@+id/chatUserName"/>
 
 
 
@@ -79,8 +78,7 @@
             android:layout_marginTop="37dp"
             android:layout_marginLeft="131dp"
             android:textColor="#FFFFFF"
-            android:id="@+id/chatUserStatus"
-            android:fontFamily="@font/nunito"/>
+            android:id="@+id/chatUserStatus"/>
 
 
 
