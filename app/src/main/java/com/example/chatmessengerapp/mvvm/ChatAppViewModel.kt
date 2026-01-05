@@ -34,17 +34,24 @@ class ChatAppViewModel : ViewModel() {
 
     fun getCurrentUser() = viewModelScope.launch(Dispatchers.IO) {
         val context = MyApplication.instance.applicationContext
-        firestore.collection("Users").document(Utils.getUiLogged())
-            .addSnapshotListener { value, error ->
-                if (value != null && value.exists() && value.data != null) {
-                    val users = value.toObject(Users::class.java)
-                    name.postValue(users?.username!!)
-                    imageUrl.postValue(users?.imageUrl!!)
+        val userId = Utils.getUiLogged()
 
-                    val mysharedPrefs = SharedPrefs(context)
-                    mysharedPrefs.setValue("username", users.username!!)
+        // FIX: Kontrollera att userId inte är tomt innan Firestore-anropet
+        if (userId.isNotEmpty()) {
+            firestore.collection("Users").document(userId)
+                .addSnapshotListener { value, _ ->
+                    if (value != null && value.exists() && value.data != null) {
+                        val users = value.toObject(Users::class.java)
+                        users?.let {
+                            name.postValue(it.username)
+                            imageUrl.postValue(it.imageUrl)
+
+                            val mysharedPrefs = SharedPrefs(context)
+                            mysharedPrefs.setValue("username", it.username!!)
+                        }
+                    }
                 }
-            }
+        }
     }
 
     // Send Message
@@ -75,22 +82,25 @@ class ChatAppViewModel : ViewModel() {
                         val setHashap = hashMapOf<String, Any>(
                             "friendid" to receiver,
                             "time" to Utils.getTime(),
-                            "sender" to Utils.getUiLogged(), // Ändrat från getUidLoggedIn
+                            "sender" to Utils.getUiLogged(),
                             "message" to message.value!!,
                             "friendsimage" to friendimage,
                             "name" to friendname,
                             "person" to "you"
                         )
 
-                        firestore.collection("Conversation${Utils.getUiLogged()}").document(receiver) // Ändrat
-                            .set(setHashap)
+                        val currentUid = Utils.getUiLogged()
+                        if (currentUid.isNotEmpty()) {
+                            firestore.collection("Conversation$currentUid").document(receiver)
+                                .set(setHashap)
 
-                        firestore.collection("Conversation${receiver}").document(Utils.getUiLogged()) // Ändrat
-                            .update(
-                                "message", message.value!!,
-                                "time", Utils.getTime(),
-                                "person", name.value!!
-                            )
+                            firestore.collection("Conversation${receiver}").document(currentUid)
+                                .update(
+                                    "message", message.value!!,
+                                    "time", Utils.getTime(),
+                                    "person", name.value!!
+                                )
+                        }
 
                         message.postValue("")
                     }
