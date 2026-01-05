@@ -6,7 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.Toolbar
+import  androidx.appcompat.widget. Toolbar
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.example.chatmessengerapp.R
@@ -48,6 +48,7 @@ class ChatFragment : Fragment() {
       chattoolbar = view.findViewById(R.id.toolBarChat)
       circleImageView = chattoolbar.findViewById(R.id.chatImageViewUser)
       tvStatus = chattoolbar.findViewById(R.id.chatUserStatus)
+      tvUserName = chattoolbar.findViewById(R.id.chatUserName)
       backbtn = chattoolbar.findViewById (R.id.chatBackBtn)
 
       backbtn.setOnClickListener {
@@ -63,7 +64,9 @@ class ChatFragment : Fragment() {
       chatbinding.viewModel = chatAppViewModel
       chatbinding.lifecycleOwner = viewLifecycleOwner
 
-      chattoolbar = chatbinding.toolbarChat
+     chatbinding.sendBtn.setonClickListener {
 
+         chatAppViewModel.sendMessage(Utils.getUiLogged(), args.users.userid!!, args.users.username, args.users.imageUrl)
+     }
   }
 }
