@@ -9,11 +9,14 @@ import android.widget.ImageView
 import android.widget.TextView
 import  androidx.appcompat.widget. Toolbar
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.R
+import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.databinding.FragmentChatBinding
+import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
 import de.hdodenhof.circleimageview.CircleImageView
 
@@ -24,7 +27,7 @@ class ChatFragment : Fragment() {
      private lateinit var chatAppViewModel: ChatAppViewModel
      private lateinit var chattoolbar: Toolbar
 
-     private lateinit var circleImageView: circleImageView
+     private lateinit var circleImageView: CircleImageView
      private lateinit var tvUserName: TextView
      private lateinit var tvStatus: TextView
      private lateinit var backbtn : ImageView
@@ -67,11 +70,14 @@ class ChatFragment : Fragment() {
       chatbinding.viewModel = chatAppViewModel
       chatbinding.lifecycleOwner = viewLifecycleOwner
 
-     chatbinding.sendBtn.setonClickListener {
+     chatbinding.sendBtn.setOnClickListener {
 
          chatAppViewModel.sendMessage(Utils.getUiLogged(), args.users.userid!!, args.users.username, args.users.imageUrl)
      }
 
-      chatAppViewModel.getMessages(args.users.userid!!).observe(viewLifecycleOwner, Observer) {}
+      chatAppViewModel.getMessages(args.users.userid!!).observe(viewLifecycleOwner, Observer) {
+
+          initRecyclerView(it)
+      }
   }
 }
