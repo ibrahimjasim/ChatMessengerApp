@@ -25,7 +25,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Developed by Developer Sam 2023 ©"
+                android:text="Developed by Fantastic 4"
                 android:textColor="@color/black"
                 android:textSize="16sp"
                 android:layout_marginBottom="20dp"/>
