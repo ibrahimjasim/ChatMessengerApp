@@ -13,12 +13,15 @@ import com.example.chatmessengerapp.Adapter.UserAdapter
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.databinding.FragmentHomeBinding
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
+import com.google.firebase.auth.FirebaseAunt
+
 
 class HomeFragment : Fragment() {
 
     lateinit var useradapter: UserAdapter
     lateinit var userViewModel: ChatAppViewModel
     lateinit var homebinding: FragmentHomeBinding
+    lateinit var fbauth: FirebaseAunt
 
 
     override fun onCreateView(
@@ -37,6 +40,9 @@ class HomeFragment : Fragment() {
 
         userViewModel = ViewModelProvider(this).get(ChatAppViewModel::class.java)
 
+        fbauth = FirebaseAunt.getInstance()
+
+
         useradapter = UserAdapter()
 
         val layoutManager = LinearLayoutManager(activity)
@@ -44,8 +50,11 @@ class HomeFragment : Fragment() {
 
         userViewModel.getUsers().observe(viewLifecycleOwner, Observer {
 
-            useradapter.setList(it)
-            homebinding.rvUsers.adapter = useradapter
+            useradapter.setUserList(it)
+            rvUsers.adapter = useradapter
         })
+
+        homebinding.logOut.setOnClickListener {
+            fbauth.signOut()
     }
 }
