@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toolbar
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -13,15 +14,19 @@ import com.example.chatmessengerapp.Adapter.UserAdapter
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.databinding.FragmentHomeBinding
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
-import com.google.firebase.auth.FirebaseAunt
+import com.google.firebase.auth.FirebaseAuth
 
 
-class HomeFragment : Fragment() {
+class HomeFragment : Fragment(), OnUserClickListener {
 
     lateinit var useradapter: UserAdapter
     lateinit var userViewModel: ChatAppViewModel
     lateinit var homebinding: FragmentHomeBinding
-    lateinit var fbauth: FirebaseAunt
+    lateinit var fbauth: FirebaseAuth
+    lateinit var toolbar : Toolbar
+    lateinit var circleImageView : CircleImageView
+
+
 
 
     override fun onCreateView(
@@ -40,8 +45,12 @@ class HomeFragment : Fragment() {
 
         userViewModel = ViewModelProvider(this).get(ChatAppViewModel::class.java)
 
-        fbauth = FirebaseAunt.getInstance()
+        fbauth = FirebaseAuth.getInstance()
 
+        toolbar = view.findViewById(R.id.toolbarMain)
+        circleImageView = toolbar.findViewById(R.id.tlImage)
+
+        homebinding.lifecycleOwner = viewLifecycleOwner
 
         useradapter = UserAdapter()
 
@@ -51,6 +60,7 @@ class HomeFragment : Fragment() {
         userViewModel.getUsers().observe(viewLifecycleOwner, Observer {
 
             useradapter.setUserList(it)
+            useradapter.setOnUserClickListener(this)
             rvUsers.adapter = useradapter
         })
 
