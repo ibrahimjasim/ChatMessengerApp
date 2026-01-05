@@ -67,4 +67,13 @@ class HomeFragment : Fragment(), OnUserClickListener {
         homebinding.logOut.setOnClickListener {
             fbauth.signOut()
     }
+
+
+        userViewModel.imageUrl.observe(viewLifecycleOwner, Observer {
+
+            Glide.with(requireContext()).load(it).into(circleImageView)
+
+
+        })
+        }
 }
