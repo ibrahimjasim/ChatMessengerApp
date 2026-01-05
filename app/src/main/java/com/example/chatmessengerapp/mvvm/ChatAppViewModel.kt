@@ -21,9 +21,15 @@ class ChatAppViewModel : ViewModel(){
 
     val usersRepo = UserRepository()
 
+    init {
+        getCurrentUser()
+
+}
+
 
     fun getUser() : LiveData<List<Users>> {
 
+        val usersRepo = null
         return usersRepo.getUser()
 
 
