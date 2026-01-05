@@ -15,7 +15,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 class UserAdapter : RecyclerView.Adapter<UserHolder>() {
 
     private var listOfUsers = listOf<Users>()
-    private var listener: OnUserClickListener? = null
+    private var listener: OnItemClickListener? = null
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserHolder {
