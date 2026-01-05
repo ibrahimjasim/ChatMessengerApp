@@ -1,6 +1,6 @@
 package com.example.chatmessengerapp.Adapter
 
-import RecentChats
+import com.example.chatmessengerapp.mvvm.RecentChats
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
