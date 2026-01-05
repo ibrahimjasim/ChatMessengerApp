@@ -3,16 +3,17 @@ package com.example.chatmessengerapp.mvvm
 import android.os.Parcel
 import android.os.Parcelable
 
-data class RecentChats(val friendid : String? ="",
-                       val friendsimage: String? = "",
-                       val time : String? = "",
-                       val name: String? ="",
-                       val sender: String? = "",
-                       val message : String? = "",
-                       val person: String? = "",
-                       val status: String? ="",
+data class RecentChats(
+    val friendid: String? = "",
+    val friendsimage: String? = "",
+    val time: String? = "",
+    val name: String? = "",
+    val sender: String? = "",
+    val message: String? = "",
+    val person: String? = "",
+    val status: String? = ""
+) : Parcelable {
 
-                       ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString(),
         parcel.readString(),
@@ -20,9 +21,9 @@ data class RecentChats(val friendid : String? ="",
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
-        parcel.readString()
-    ) {
-    }
+        parcel.readString(),
+        parcel.readString() // ✅ status added
+    )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(friendid)
@@ -33,22 +34,12 @@ data class RecentChats(val friendid : String? ="",
         parcel.writeString(message)
         parcel.writeString(person)
         parcel.writeString(status)
-
     }
 
-    override fun describeContents(): Int {
-        return 0
-    }
+    override fun describeContents(): Int = 0
 
     companion object CREATOR : Parcelable.Creator<RecentChats> {
-        override fun createFromParcel(parcel: Parcel): RecentChats {
-            return RecentChats(parcel)
-        }
-
-        override fun newArray(size: Int): Array<RecentChats?> {
-            return arrayOfNulls(size)
-        }
+        override fun createFromParcel(parcel: Parcel): RecentChats = RecentChats(parcel)
+        override fun newArray(size: Int): Array<RecentChats?> = arrayOfNulls(size)
     }
-
-
 }
