@@ -71,5 +71,7 @@ class ChatFragment : Fragment() {
 
          chatAppViewModel.sendMessage(Utils.getUiLogged(), args.users.userid!!, args.users.username, args.users.imageUrl)
      }
+
+      chatAppViewModel.getMessages(args.users.userid!!).observe(viewLifecycleOwner, Observer) {}
   }
 }
