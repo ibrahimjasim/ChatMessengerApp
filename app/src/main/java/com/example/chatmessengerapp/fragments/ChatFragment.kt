@@ -78,23 +78,24 @@ class ChatFragment : Fragment() {
          chatAppViewModel.sendMessage(Utils.getUiLogged(), args.users.userid!!, args.users.username, args.users.imageUrl)
      }
 
-      chatAppViewModel.getMessages(args.users.userid!!).observe(viewLifecycleOwner, Observer) {
-
-          initRecyclerView(it)
-      }
+      chatAppViewModel.getMessages(args.users.userid!!)
+          .observe(viewLifecycleOwner) {
+              initRecyclerView(it)
+          }
   }
 
     private fun initRecyclerView(it: List<Messages>) {
 
         messageAdapter = MessageAdapter()
-        val layoutManager = LinearLayoutManager(context)
-        chatbidning.messagesrecyclerView.layout = layoutManager
+        val layoutManager = LinearLayoutManager(requireContext())
         layoutManager.stackFromEnd = true
+        chatbinding.messagesrecyclerView.layoutManager = layoutManager
         messageAdapter.setMessageList(it)
         messageAdapter.notifyDataSetChanged()
-        chatbindning.messagesrecyclerView.adapter = messageAdapter
+        chatbinding.messagesrecyclerView.adapter = messageAdapter
 
-}
+
+    }
 
 
 
