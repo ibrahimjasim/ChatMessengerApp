@@ -8,8 +8,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.chatmessenger.R
-import com.example.chatmessenger.modal.Users
+import com.example.chatmessengerapp.R
+import com.example.chatmessengerapp.module.Users
 import de.hdodenhof.circleimageview.CircleImageView
 
 class UserAdapter : RecyclerView.Adapter<UserHolder>() {
@@ -84,5 +84,6 @@ class UserHolder(itemView: View) : RecyclerView.ViewHolder(itemView){
 
 }
 
-interface OnItemClickListener{
+interface OnItemClickListener {
     fun onUserSelected(position: Int, users: Users)
+}
