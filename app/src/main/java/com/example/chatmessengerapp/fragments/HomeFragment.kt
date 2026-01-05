@@ -10,6 +10,7 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.chatmessengerapp.Adapter.UserAdapter
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.databinding.FragmentHomeBinding
@@ -25,6 +26,8 @@ class HomeFragment : Fragment(), OnUserClickListener {
     lateinit var fbauth: FirebaseAuth
     lateinit var toolbar : Toolbar
     lateinit var circleImageView : CircleImageView
+    lateinit var rvUsers : RecyclerView
+
 
 
 
