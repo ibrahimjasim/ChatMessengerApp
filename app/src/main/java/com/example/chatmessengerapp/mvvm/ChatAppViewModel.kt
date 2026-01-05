@@ -21,6 +21,8 @@ class ChatAppViewModel : ViewModel(){
     private val firestore = FirebaseFirestore.getInstance()
 
     val usersRepo = UserRepository()
+    val messagesRepo = MessageRepository()
+
 
     init {
         getCurrentUser()
@@ -113,5 +115,14 @@ class ChatAppViewModel : ViewModel(){
 
 
                 }
+
+            fun getMessanges(friendid: String) : LiveData<List<Messages>> {
+
+
+            return messagesRepo.getMessages(friendid)
+
+            })
+
+}
 
 }
