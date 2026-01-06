@@ -9,34 +9,41 @@ import com.google.firebase.firestore.Query
 
 class MessageRepository {
 
-    private val firestore = FirebaseFirestore.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
+
+
+
 
     fun getMessages(friendid: String): LiveData<List<Messages>> {
-        val messageList = MutableLiveData<List<Messages>>()
+
+        val messages = MutableLiveData<List<Messages>>()
+
+        val uniqueId = listOf(Utils.getUidLoggedIn(), friendid).sorted()
+        uniqueId.joinToString(separator = "")
 
 
-        val uniqueid = listOf(Utils.getUiLogged(), friendid).sorted()
-        uniqueid.joinToString(separator = "")
 
-        firestore.collection("Messages").document(uniqueid.toString()).collection("chats")
-            .orderBy("time", Query.Direction.ASCENDING).addSnapshotListener { value, error ->
 
-                if (error != null) {
+        firestore.collection("Messages").document(uniqueId.toString()).collection("chats").orderBy("time", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, exception ->
+
+                if (exception != null) {
 
                     return@addSnapshotListener
-
                 }
 
-                val messageList = mutableListOf<Messages>()
-
-                if (!value!!.isEmpty) {
+                val messagesList = mutableListOf<Messages>()
 
 
-                    value.documents.forEach { document ->
+                if (!snapshot!!.isEmpty) {
 
-                        val messageModel = document.toObjekt(Messages::class.java)
 
-                        if (messageModel!!.sender.equals(Utils.getLoggerIn()) && messageModel.receiver.equals(
+                    snapshot.documents.forEach { document ->
+
+                        val messageModel = document.toObject(Messages::class.java)
+
+
+                        if (messageModel!!.sender.equals(Utils.getUidLoggedIn()) && messageModel.receiver.equals(
                                 friendid
                             ) ||
                             messageModel.sender.equals(friendid) && messageModel.receiver.equals(
@@ -44,19 +51,28 @@ class MessageRepository {
                             )
                         ) {
                             messageModel.let {
-                                Messages
 
-                                messageList.add(it)
+
+                                messagesList.add(it!!)
+
+
                             }
                         }
 
                     }
 
-                    messages.value = messagesList
 
+
+                    messages.value = messagesList
 
                 }
             }
+
         return messages
 
+
     }
+
+
+
+}
