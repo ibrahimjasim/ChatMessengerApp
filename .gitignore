@@ -17,4 +17,5 @@
 .keystore
      # Google Services file
      /app/google-services.json
+     .idea/
 

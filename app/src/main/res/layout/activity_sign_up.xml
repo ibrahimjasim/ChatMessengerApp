@@ -1,142 +1,165 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout>
+<layout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <ScrollView
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@drawable/sign_up_background">
 
-        <RelativeLayout
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:orientation="vertical"
-            tools:context=".CreateUserActivity">
+            android:layout_height="match_parent">
 
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="20dp"
-                android:orientation="vertical">
+                tools:context=".SignUpActivity">
 
-                <TextView
-                    android:id="@+id/titleText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="40dp"
-                    android:gravity="start"
-                    android:text="Sign up "
-                    android:textSize="30sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.5"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:layout_margin="20dp"
+                    android:orientation="vertical">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-
-                    android:layout_margin="10dp"
-                    android:background="@android:color/transparent"
-                    app:boxBackgroundColor="@android:color/transparent">
-
-                    <EditText
-                        android:id="@+id/signUpEtName"
+                    <TextView
+                        android:id="@+id/titleText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:ems="10"
-                        android:hint="Enter name"
-                        android:importantForAutofill="no"
-                        android:inputType="textCapWords"
-                        android:maxLength="25"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="0dp"
-                        tools:background="@android:color/transparent" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginBottom="40dp"
+                        android:text="Sign up"
+                        android:textSize="30sp" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:background="@android:color/transparent"
-                    android:padding="0dp"
-
-                    app:boxBackgroundColor="@android:color/transparent">
-
-                    <EditText
-                        android:id="@+id/signUpEmail"
+                    <!-- NAME -->
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:ems="10"
-                        android:hint="Email"
-                        android:importantForAutofill="no"
-                        android:inputType="textEmailAddress"
-                        android:maxLength="25"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="0dp"
-                        tools:background="@android:color/transparent" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_margin="10dp">
 
-                <com.google.android.material.textfield.TextInputLayout
+                        <eightbitlab.com.blurview.BlurView
+                            android:id="@+id/nameBlur"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            app:blurRadius="10"
+                            app:overlayColor="#55FFFFFF" />
 
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_width="fill_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:boxBackgroundColor="@android:color/transparent"
+                            app:boxStrokeColor="@android:color/transparent">
 
-                    android:background="@android:color/transparent"
-                    android:padding="0dp"
-                    app:boxBackgroundColor="@android:color/transparent">
+                            <EditText
+                                android:id="@+id/signUpEtName"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:hint="Enter name"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </FrameLayout>
 
-                    <EditText
-                        android:id="@+id/signUpPassword"
+                    <!-- EMAIL -->
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:ems="10"
-                        android:hint="Enter password"
-                        android:importantForAutofill="no"
-                        android:inputType="textPassword"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="0dp"
-                        tools:background="@android:color/transparent" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_margin="10dp">
 
+                        <eightbitlab.com.blurview.BlurView
+                            android:id="@+id/emailBlur"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            app:blurRadius="10"
+                            app:overlayColor="#55FFFFFF" />
 
-                <Button
-                    android:id="@+id/signUpBtn"
-                    android:layout_width="300dp"
-                    android:layout_height="60dp"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="20dp"
-                    android:text="Sign Up"
-                    android:textSize="16sp" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:boxBackgroundColor="@android:color/transparent"
+                            app:boxStrokeColor="@android:color/transparent">
 
+                            <EditText
+                                android:id="@+id/signUpEmail"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:hint="Email"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </FrameLayout>
 
-                <TextView
-                    android:id="@+id/signUpTextToSignIn"
+                    <!-- PASSWORD -->
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp">
+
+                        <eightbitlab.com.blurview.BlurView
+                            android:id="@+id/passwordBlur"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            app:blurRadius="10"
+                            app:overlayColor="#55FFFFFF" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:boxBackgroundColor="@android:color/transparent"
+                            app:boxStrokeColor="@android:color/transparent">
+
+                            <EditText
+                                android:id="@+id/signUpPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:hint="Password"
+                                android:background="@android:color/transparent"
+                                android:paddingStart="16dp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </FrameLayout>
+
+                    <!-- BUTTON -->
+                    <FrameLayout
+                        android:layout_width="300dp"
+                        android:layout_height="60dp"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="20dp">
+
+                        <eightbitlab.com.blurview.BlurView
+                            android:id="@+id/signUpBlur"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            app:blurRadius="18"
+                            app:overlayColor="#6626C6DA" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/signUpBtn"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="Sign Up"
+                            android:backgroundTint="@android:color/transparent"
+                            app:cornerRadius="18dp" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/signUpTextToSignIn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="20dp"
+                        android:text="Already got an account? Login" />
+
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/signUpProgressBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="20dp"
-                    android:text="Already got an account? Login"
-                    android:textColor="@color/black" />
-            </LinearLayout>
+                    android:layout_centerInParent="true"
+                    android:visibility="gone" />
 
-
-            <ProgressBar
-                android:id="@+id/signUpProgressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-        </RelativeLayout>
-
-    </ScrollView>
-
+            </RelativeLayout>
+        </ScrollView>
+    </FrameLayout>
 </layout>
