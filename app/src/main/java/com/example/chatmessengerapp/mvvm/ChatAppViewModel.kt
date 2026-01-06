@@ -7,12 +7,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatmessengerapp.MyApplication
 import com.example.chatmessengerapp.SharedPrefs
 import com.example.chatmessengerapp.Utils
+import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.module.Users
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class ChatAppViewModel : ViewModel(){
+class ChatAppViewModel : ViewModel() {
 
     val name = MutableLiveData<String>()
     val imageUrl = MutableLiveData<String>()
@@ -20,39 +21,36 @@ class ChatAppViewModel : ViewModel(){
     private val firestore = FirebaseFirestore.getInstance()
 
     val usersRepo = UserRepository()
+    val messageRepo = MessageRepository()
+    val recentChatRepo = ChatListRepository()
 
     init {
         getCurrentUser()
     }
 
-
-    fun getUsers() : LiveData<List<Users>> {
+    fun getUsers(): LiveData<List<Users>> {
         return usersRepo.getUser()
     }
 
-
     fun getCurrentUser() = viewModelScope.launch(Dispatchers.IO) {
-
         val context = MyApplication.instance.applicationContext
+        val userId = Utils.getUiLogged()
 
-        firestore.collection("Users").document(Utils.getUiLogged())
-            .addSnapshotListener { value, error ->
+        // FIX: Kontrollera att userId inte är tomt innan Firestore-anropet
+        if (userId.isNotEmpty()) {
+            firestore.collection("Users").document(userId)
+                .addSnapshotListener { value, _ ->
+                    if (value != null && value.exists() && value.data != null) {
+                        val users = value.toObject(Users::class.java)
+                        users?.let {
+                            name.postValue(it.username)
+                            imageUrl.postValue(it.imageUrl)
 
-
-                if (value != null && value.exists() && value.data != null) {
-
-                    val users = value.toObject(Users::class.java)
-
-                    name.value = users?.username!!
-                    imageUrl.value = users?.imageUrl!!
-
-                    val mysharedPrefs = SharedPrefs(context)
-                    mysharedPrefs.setValue("username", users.username)
-
-
+                            val mysharedPrefs = SharedPrefs(context)
+                            mysharedPrefs.setValue("username", it.username!!)
+                        }
+                    }
                 }
-
-            }
-
+        }
     }
 }

@@ -1,0 +1,68 @@
+package com.example.chatmessengerapp.Adapter
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.example.chatmessengerapp.R
+import com.example.chatmessengerapp.Utils
+import com.example.chatmessengerapp.module.Messages
+
+class MessageAdapter : RecyclerView.Adapter<MessageHolder>() {
+
+    private var listOfMessage = listOf<Messages>()
+
+    private val left = 0
+    private val right = 1
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == right) {
+            val view = inflater.inflate(R.layout.chatitemright, parent, false)
+            MessageHolder(view)
+        } else {
+            val view = inflater.inflate(R.layout.chatitemleft, parent, false)
+            MessageHolder(view)
+        }
+    }
+
+    override fun getItemCount() = listOfMessage.size
+
+    override fun onBindViewHolder(holder: MessageHolder, position: Int) {
+        val message = listOfMessage[position]
+
+        holder.messageText.visibility = View.VISIBLE
+        holder.timeOfSent.visibility = View.VISIBLE
+
+        holder.messageText.text = message.message
+        holder.timeOfSent.text = message.time?.substring(0, 5) ?: ""
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+    override fun getItemViewType(position: Int) =
+        if (listOfMessage[position].sender == Utils.getUiLogged()) right else left
+
+
+    fun setList(newList: List<Messages>) {
+
+        this.listOfMessage = newList
+
+    }
+
+}
+
+class MessageHolder(itemView: View) : RecyclerView.ViewHolder(itemView.rootView) {
+    val messageText: TextView = itemView.findViewById(R.id.show_message)
+    val timeOfSent: TextView = itemView.findViewById(R.id.timeView)
+}
