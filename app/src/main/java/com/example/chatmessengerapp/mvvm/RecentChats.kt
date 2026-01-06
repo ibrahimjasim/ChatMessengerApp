@@ -22,7 +22,7 @@ data class RecentChats(
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
-        parcel.readString() // ✅ status added
+        parcel.readString()
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
