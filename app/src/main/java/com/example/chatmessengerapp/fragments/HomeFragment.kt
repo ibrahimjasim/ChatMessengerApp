@@ -1,6 +1,5 @@
 package com.example.chatmessengerapp.fragments
 
-import RecentChatAdapter
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.Adapter.OnItemClickListener
-import com.example.chatmessengerapp.Adapter.OnChatClickedListener
 import com.example.chatmessengerapp.Adapter.RecentChatAdapter
 import com.example.chatmessengerapp.Adapter.UserAdapter
 import com.example.chatmessengerapp.R
@@ -29,7 +27,7 @@ import com.example.chatmessengerapp.mvvm.ChatAppViewModel
 import com.google.firebase.auth.FirebaseAuth
 import de.hdodenhof.circleimageview.CircleImageView
 
-class HomeFragment : Fragment(), OnItemClickListener, OnChatClickedListener {
+class HomeFragment : Fragment(), OnItemClickListener, RecentChatAdapter.OnChatClicked {
 
     private lateinit var rvUsers: RecyclerView
     private lateinit var rvRecentChats: RecyclerView
@@ -55,19 +53,16 @@ class HomeFragment : Fragment(), OnItemClickListener, OnChatClickedListener {
         viewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
         binding.lifecycleOwner = viewLifecycleOwner
 
-        // Toolbar views (from fragment_home.xml)
         toolbar = view.findViewById(R.id.toolbarMain)
         val logoutImage = toolbar.findViewById<ImageView>(R.id.logOut)
         circleImageView = toolbar.findViewById(R.id.tlImage)
 
-        // Observe profile image
         viewModel.imageUrl.observe(viewLifecycleOwner, Observer { url ->
             if (!url.isNullOrBlank()) {
                 Glide.with(requireContext()).load(url).into(circleImageView)
             }
         })
 
-        // Logout
         val firebaseAuth = FirebaseAuth.getInstance()
         logoutImage.setOnClickListener {
             firebaseAuth.signOut()
@@ -75,35 +70,33 @@ class HomeFragment : Fragment(), OnItemClickListener, OnChatClickedListener {
             requireActivity().finish()
         }
 
-        // RecyclerViews
         rvUsers = view.findViewById(R.id.rvUsers)
         rvRecentChats = view.findViewById(R.id.rvRecentChats)
 
         adapter = UserAdapter()
         recentAdapter = RecentChatAdapter()
 
-        rvUsers.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        rvUsers.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         rvRecentChats.layoutManager = LinearLayoutManager(requireContext())
 
         rvUsers.adapter = adapter
         rvRecentChats.adapter = recentAdapter
 
         adapter.setOnClickListener(this)
+
+        //  receive RecentChatAdapter.OnChatClicked
         recentAdapter.setOnChatClickListener(this)
 
-        // Load users list
         viewModel.getUsers().observe(viewLifecycleOwner, Observer { users ->
             adapter.setList(users)
         })
 
-        // Load recent chats list
         viewModel.getRecentUsers().observe(viewLifecycleOwner, Observer { chats ->
             recentAdapter.setList(chats)
         })
 
-        // Go to settings
         circleImageView.setOnClickListener {
-
             findNavController().navigate(R.id.action_homeFragment_to_settingsFragment)
         }
     }
@@ -113,8 +106,8 @@ class HomeFragment : Fragment(), OnItemClickListener, OnChatClickedListener {
         findNavController().navigate(action)
     }
 
-    override fun onChatClicked(position: Int, chatList: RecentChats) {
 
+    override fun getOnChatClickedItem(position: Int, chatList: RecentChats) {
         val action = HomeFragmentDirections.actionHomeFragmentToChatFromHomeFragment(chatList)
         findNavController().navigate(action)
     }
