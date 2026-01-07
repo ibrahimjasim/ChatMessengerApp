@@ -9,68 +9,32 @@ import com.google.firebase.firestore.Query
 
 class ChatListRepository {
 
-    val firestore = FirebaseFirestore.getInstance()
-
+    private val firestore = FirebaseFirestore.getInstance()
 
     fun getAllChatList(): LiveData<List<RecentChats>> {
 
         val mainChatList = MutableLiveData<List<RecentChats>>()
 
+        val uid = Utils.getUidLoggedIn()
 
-        // SHOWING THE RECENT MESSAGED PERSON ON TOP
-        firestore.collection("Conversation${Utils.getUidLoggedIn()}").orderBy("time", Query.Direction.DESCENDING)
-            .addSnapshotListener { value, error ->
+        firestore.collection("Conversation$uid")
+            .orderBy("time", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, exception ->
 
-
-                if (error != null) {
-
+                if (exception != null) {
+                    // You can log it if you want
+                    // Log.e("ChatListRepository", "Firestore error", exception)
                     return@addSnapshotListener
                 }
 
+                val chatList = snapshot?.documents
+                    ?.mapNotNull { it.toObject(RecentChats::class.java) }
+                    ?.filter { it.sender == uid }
+                    ?: emptyList()
 
-                val chatlist = mutableListOf<RecentChats>()
-
-                value?.forEach { document ->
-
-                    val recentmodal = document.toObject(RecentChats::class.java)
-
-
-                    if (recentmodal.sender.equals(Utils.getUidLoggedIn())) {
-
-
-                        recentmodal.let {
-
-
-                            chatlist.add(it)
-
-
-
-
-
-
-
-
-                        }
-
-
-                    }
-
-
-
-
-
-
-
-                }
-
-
-                mainChatList.value = chatlist
-
-
+                mainChatList.value = chatList
             }
 
         return mainChatList
-
-
     }
 }

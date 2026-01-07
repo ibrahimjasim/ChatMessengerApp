@@ -1,50 +1,20 @@
 package com.example.chatmessengerapp
 
-import android.annotation.SuppressLint
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.Date
 
-class Utils {
+object Utils {
 
-
-    companion object {
-        @SuppressLint("StaticFieldLeak")
-        val context = MyApplication.instance.applicationContext
-        @SuppressLint("StaticFieldLeak")
-        val firestore = FirebaseFirestore.getInstance()
-
-
-
-
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
         private val auth = FirebaseAuth.getInstance()
-        private var userid: String = ""
-        const val REQUEST_IMAGE_CAPTURE = 1
-        const val REQUEST_IMAGE_PICK = 2
-        const val MESSAGE_RIGHT = 1
-        const val MESSAGE_LEFT = 2
-        const val CHANNEL_ID = "com.example.chatmessenger"
 
-
-        fun getUidLoggedIn(): String {
-
-            if (auth.currentUser!=null){
-
-
-                userid = auth.currentUser!!.uid
-
-
-
-            }
-
-
-            return userid
-
-
-
+        fun getUiLogged(): String {
+            // If auth.currentUser is not null, return its uid. Otherwise, return an empty string.
+            return auth.currentUser?.uid ?: ""
         }
+
 
         fun getTime(): String {
 
@@ -56,11 +26,11 @@ class Utils {
 
             return stringdate
 
-        }
-
-
-
 
 
     }
+
+
+
+
 }

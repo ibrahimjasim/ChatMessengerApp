@@ -1,3 +1,5 @@
+package com.example.chatmessengerapp.module
+
 import android.os.Parcel
 import android.os.Parcelable
 
