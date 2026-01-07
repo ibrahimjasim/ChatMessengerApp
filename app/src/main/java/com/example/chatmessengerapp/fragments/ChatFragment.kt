@@ -24,7 +24,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 
 class ChatFragment : Fragment() {
 
-     private lateinit var args: ChatFragmentArgs
+     private lateinit var args: ChatFragment
      private lateinit var  chatbinding: FragmentChatBinding
      private lateinit var chatAppViewModel: ChatAppViewModel
      private lateinit var chattoolbar: Toolbar
