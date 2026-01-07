@@ -5,11 +5,13 @@
     android:id="@+id/nav_graph"
     app:startDestination="@id/homeFragment">
 
+    <!-- HOME -->
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.example.chatmessengerapp.fragments.HomeFragment"
-        android:label="fragment_home"
+        android:label="Home"
         tools:layout="@layout/fragment_home">
+
         <action
             android:id="@+id/action_homeFragment_to_chatFragment"
             app:destination="@id/chatFragment"
@@ -17,6 +19,7 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+
         <action
             android:id="@+id/action_homeFragment_to_settingsFragment"
             app:destination="@id/settingsFragment"
@@ -24,6 +27,7 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+
         <action
             android:id="@+id/action_homeFragment_to_chatFromHomeFragment"
             app:destination="@id/chatFromHomeFragment"
@@ -32,26 +36,35 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
     </fragment>
+
+    <!-- CHAT -->
     <fragment
         android:id="@+id/chatFragment"
         android:name="com.example.chatmessengerapp.fragments.ChatFragment"
-        android:label="fragment_chat"
+        android:label="Chat"
         tools:layout="@layout/fragment_chat">
         <argument
             android:name="users"
             app:argType="com.example.chatmessengerapp.module.Users" />
     </fragment>
+
+    <!-- SETTINGS -->
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.example.chatmessengerapp.fragments.SettingsFragment"
-        android:label="fragment_settings"
+        android:label="Settings"
         tools:layout="@layout/fragment_settings" />
+
+    <!-- CHAT FROM HOME -->
     <fragment
         android:id="@+id/chatFromHomeFragment"
         android:name="com.example.chatmessengerapp.fragments.ChatFromHomeFragment"
-        android:label="ChatfromHome">
+        android:label="ChatfromHome"
+        tools:layout="@layout/fragment_chatfrom_home">
+
         <argument
             android:name="recentchats"
             app:argType="com.example.chatmessengerapp.module.RecentChats" />
     </fragment>
+
 </navigation>
