@@ -1,5 +1,6 @@
 package com.example.chatmessengerapp.mvvm
 
+import android.media.midi.MidiSender
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -7,13 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatmessengerapp.MyApplication
 import com.example.chatmessengerapp.SharedPrefs
 import com.example.chatmessengerapp.Utils
-import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.module.Users
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class ChatAppViewModel : ViewModel() {
+class ChatAppViewModel : ViewModel(){
 
     val name = MutableLiveData<String>()
     val imageUrl = MutableLiveData<String>()
@@ -24,34 +24,41 @@ class ChatAppViewModel : ViewModel() {
     val messageRepo = MessageRepository()
     val recentChatRepo = ChatListRepository()
 
+
+
     init {
         getCurrentUser()
     }
 
-    fun getUsers(): LiveData<List<Users>> {
+
+    fun getUsers() : LiveData<List<Users>> {
         return usersRepo.getUser()
     }
 
+
     fun getCurrentUser() = viewModelScope.launch(Dispatchers.IO) {
+
         val context = MyApplication.instance.applicationContext
-        val userId = Utils.getUiLogged()
 
-        // FIX: Kontrollera att userId inte är tomt innan Firestore-anropet
-        if (userId.isNotEmpty()) {
-            firestore.collection("Users").document(userId)
-                .addSnapshotListener { value, _ ->
-                    if (value != null && value.exists() && value.data != null) {
-                        val users = value.toObject(Users::class.java)
-                        users?.let {
-                            name.postValue(it.username)
-                            imageUrl.postValue(it.imageUrl)
+        firestore.collection("Users").document(Utils.getUiLogged())
+            .addSnapshotListener { value, error ->
 
-                            val mysharedPrefs = SharedPrefs(context)
-                            mysharedPrefs.setValue("username", it.username!!)
-                        }
-                    }
+
+                if (value != null && value.exists() && value.data != null) {
+
+                    val users = value.toObject(Users::class.java)
+
+                    name.value = users?.username!!
+                    imageUrl.value = users?.imageUrl!!
+
+                    val mysharedPrefs = SharedPrefs(context)
+                    mysharedPrefs.setValue("username", users.username)
+
+
                 }
-        }
+
+            }
+
     }
 
     // Send Message
@@ -59,55 +66,65 @@ class ChatAppViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val context = MyApplication.instance.applicationContext
 
-            val hasMap = hashMapOf<String, Any>(
-                "sender" to sender,
-                "receiver" to receiver,
-                "message" to message.value!!,
-                "time" to Utils.getTime()
+            val hasMap = hasMapOf<String, Any>(
+                "sender" to sender, "receiver" to receiver, "message" to message.value!!, "time" to Utils.getTime()
+
             )
 
-            val uniqueIdList = listOf(sender, receiver).sorted()
-            val uniqueId = uniqueIdList.joinToString(separator = "")
+            val uniqueId = listOf(sender, receiver).sorted()
+            uniqueId.joinToString(separator = "")
 
             val friendnamesplit = friendname.split("\\s".toRegex())[0]
             val mysharedPrefs = SharedPrefs(context)
             mysharedPrefs.setValue("friendid", receiver)
-            mysharedPrefs.setValue("chatroomid", uniqueId)
+            mysharedPrefs.setValue("chatroomid", uniqueId.toString())
             mysharedPrefs.setValue("friendname", friendnamesplit)
             mysharedPrefs.setValue("friendimage", friendimage)
 
-            firestore.collection("Messages").document(uniqueId).collection("chats")
-                .document(Utils.getTime()).set(hasMap).addOnCompleteListener { taskmessage ->
-                    if (taskmessage.isSuccessful) {
-                        val setHashap = hashMapOf<String, Any>(
-                            "friendid" to receiver,
-                            "time" to Utils.getTime(),
-                            "sender" to Utils.getUiLogged(),
-                            "message" to message.value!!,
-                            "friendsimage" to friendimage,
-                            "name" to friendname,
-                            "person" to "you"
+            firestore.collection("Messages").document(uniqueId.toString()).collection("chats")
+                .document(Utils.getTime()).set(hashMap).addOnCompleteListener { taskmessage ->
+
+                // all work for recent chatslist
+                if (taskmessage.isSuccessful) {
+                    val setHashap = hashMapOf<String, Any>(
+                        "friendid" to receiver,
+                        "time" to Utils.getTime(),
+                        "sender" to Utils.getUidLoggedIn(),
+                        "message" to message.value!!,
+                        "friendsimage" to friendimage,
+                        "name" to friendname,
+                        "person" to "you"
+                    )
+
+                    firestore.collection("Conversation${Utils.getUidLoggedIn()}").document(receiver)
+                        .set(setHashap)
+
+                    firestore.collection("Conversation${receiver}").document(Utils.getUidLoggedIn())
+                        .update(
+                            "message",
+                            message.value!!,
+                            "time",
+                            Utils.getTime(),
+                            "person",
+                            name.value!!
                         )
 
-                        val currentUid = Utils.getUiLogged()
-                        if (currentUid.isNotEmpty()) {
-                            firestore.collection("Conversation$currentUid").document(receiver)
-                                .set(setHashap)
-
-                            firestore.collection("Conversation${receiver}").document(currentUid)
-                                .update(
-                                    "message", message.value!!,
-                                    "time", Utils.getTime(),
-                                    "person", name.value!!
-                                )
-                        }
-
-                        message.postValue("")
+                    if (task.isSuccessful) {
+                        message.value = ""
                     }
-                }
-        }
 
-    fun getMessages(friendid: String): LiveData<List<Messages>> {
-        return messageRepo.getMessages(friendid)
-    }
+                })
+
+
+                }
+
+            fun getMessanges(friendid: String) : LiveData<List<Messages>> {
+
+
+            return messagesRepo.getMessages(friendid)
+
+            })
+
+}
+
 }
