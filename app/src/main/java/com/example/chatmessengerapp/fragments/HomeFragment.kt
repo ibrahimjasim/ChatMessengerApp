@@ -2,7 +2,6 @@ package com.example.chatmessengerapp.fragments
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +21,7 @@ import com.example.chatmessengerapp.module.Users
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
 import com.google.firebase.auth.FirebaseAuth
 
+
 class HomeFragment : Fragment(), OnItemClickListener {
 
     private lateinit var useradapter: UserAdapter
@@ -35,15 +35,14 @@ class HomeFragment : Fragment(), OnItemClickListener {
     ): View {
         homebinding = DataBindingUtil.inflate(inflater, R.layout.fragment_home, container, false)
         return homebinding.root
+
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        fbauth = FirebaseAuth.getInstance()
 
-        userViewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
-        
+        fbauth = FirebaseAuth.getInstance()
         useradapter = UserAdapter()
 
         // Setup recycler view
@@ -56,12 +55,16 @@ class HomeFragment : Fragment(), OnItemClickListener {
         useradapter.setOnClickListener(this)
 
         userViewModel.getUsers().observe(viewLifecycleOwner, Observer {
+            // Use correct method name
             useradapter.setList(it)
-
+            rvUsers.adapter = useradapter
         })
+
+        useradapter.setOnUserClickListener(this)
 
         homebinding.logOut.setOnClickListener {
             fbauth.signOut()
+            // After logout, go to sign in screen
             val intent = Intent(activity, SignInActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
@@ -69,13 +72,17 @@ class HomeFragment : Fragment(), OnItemClickListener {
         }
 
         userViewModel.imageUrl.observe(viewLifecycleOwner, Observer {
+            // Use binding to access views
             Glide.with(requireContext()).load(it).into(homebinding.tlImage)
         })
     }
 
     override fun onUserSelected(position: Int, users: Users) {
-        val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(users)
+        // TODO: Handle user click to navigate to chat screen
+       val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(users)
         view?.findNavController()?.navigate(action)
-        Log.e("HOMEFRAGMENT", "ClickedOn${users.username}")
+       Log.e("HOMEFRAGMENT", "ClickedOn${users.username}")
     }
+
+
 }
