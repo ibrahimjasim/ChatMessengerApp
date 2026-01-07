@@ -13,12 +13,12 @@ class MessageAdapter : RecyclerView.Adapter<MessageHolder>() {
 
     private var listOfMessage = listOf<Messages>()
 
-    private val left = 0
-    private val right = 1
+    private val LEFT = 0
+    private val RIGHT = 1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == right) {
+        return if (viewType == RIGHT) {
             val view = inflater.inflate(R.layout.chatitemright, parent, false)
             MessageHolder(view)
         } else {
@@ -51,8 +51,7 @@ class MessageAdapter : RecyclerView.Adapter<MessageHolder>() {
     }
 
     override fun getItemViewType(position: Int) =
-        if (listOfMessage[position].sender == Utils.getUiLogged()) right else left
-
+        if (listOfMessage[position].sender == Utils.getUidLoggedIn()) RIGHT else LEFT
 
     fun setList(newList: List<Messages>) {
 
