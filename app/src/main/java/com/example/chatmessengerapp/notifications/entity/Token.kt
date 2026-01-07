@@ -1,4 +1,4 @@
 package com.example.chatmessengerapp.notifications.entity
 
-class Token {
+data class Token (val token: String? = "") {
 }
