@@ -1,5 +1,6 @@
 package com.example.chatmessengerapp.notifications.entity
 
-class PushNotification (val data: NotificationData, val to: String){
-
-}
+data class PushNotification(
+    val data: NotificationData = NotificationData(),
+    val to: String = ""
+)
