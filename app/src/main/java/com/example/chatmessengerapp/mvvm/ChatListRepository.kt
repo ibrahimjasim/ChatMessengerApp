@@ -3,74 +3,38 @@ package com.example.chatmessengerapp.mvvm
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.chatmessengerapp.Utils
+import com.example.chatmessengerapp.module.RecentChats
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 
-
 class ChatListRepository {
 
-    val firestore = FirebaseFirestore.getInstance()
-
+    private val firestore = FirebaseFirestore.getInstance()
 
     fun getAllChatList(): LiveData<List<RecentChats>> {
 
         val mainChatList = MutableLiveData<List<RecentChats>>()
 
+        firestore
+            .collection("Conversation${Utils.getUidLoggedIn()}")
+            .orderBy("time", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
 
-        // SHOWING THE RECENT MESSAGED PERSON ON TOP
-        firestore.collection("Conversation${Utils.getUidLoggedIn()}").orderBy("time", Query.Direction.DESCENDING)
-            .addSnapshotListener { value, error ->
-
-
-                if (error != null) {
-
+                if (error != null || snapshot == null) {
+                    mainChatList.postValue(emptyList())
                     return@addSnapshotListener
                 }
 
+                val chatList = mutableListOf<RecentChats>()
 
-                val chatlist = mutableListOf<RecentChats>()
-
-                value?.forEach { document ->
-
-                    val recentmodal = document.toObject(RecentChats::class.java)
-
-
-                    if (recentmodal.sender.equals(Utils.getUidLoggedIn())) {
-
-
-                        recentmodal.let {
-
-
-                            chatlist.add(it)
-
-
-
-
-
-
-
-
-                        }
-
-
-                    }
-
-
-
-
-
-
-
+                for (document in snapshot.documents) {
+                    val recentModel = document.toObject(RecentChats::class.java) ?: continue
+                    chatList.add(recentModel)
                 }
 
-
-                mainChatList.value = chatlist
-
-
+                mainChatList.postValue(chatList)
             }
 
         return mainChatList
-
-
     }
 }
