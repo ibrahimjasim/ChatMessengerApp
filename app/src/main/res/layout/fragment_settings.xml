@@ -1,138 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout>
 
-
     <data>
-
-
         <variable
             name="viewModel"
             type="com.example.chatmessengerapp.mvvm.ChatAppViewModel" />
-
-
-
     </data>
 
-    <ScrollView
+    <FrameLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        tools:context=".fragments.SettingsFragment">
 
-        <LinearLayout
-            android:orientation="vertical"
+        <!-- OPTIONAL BACKGROUND IMAGE (same idea as Home, can be removed if ni vill) -->
+        <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/settingChatContainer"
+            android:src="@drawable/sign_up_background"
+            android:scaleType="centerCrop"
+            android:alpha="0.15"
+            android:contentDescription="@null" />
 
-            xmlns:tools="http://schemas.android.com/tools">
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
-
-
-            <androidx.appcompat.widget.Toolbar
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:id="@+id/toolbarMain"
-                android:background="#191970">
-
-
-                <ImageView
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:src="@drawable/back"
-                    android:id="@+id/settingBackBtn"
-                    android:layout_marginEnd="10dp"/>
-
-
-
-
-            </androidx.appcompat.widget.Toolbar>
-
-            <!-- need to look at de.hdodenohof -->
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:layout_marginTop="30dp"
-                android:id="@+id/settingUpdateImage"
-                android:layout_marginBottom="15dp"
-                android:layout_width="160dp"
-                android:layout_height="160dp"
-                android:src="@drawable/person"
-                android:layout_gravity="center"
-                android:padding="15dp"
-                app:civ_border_width="1dp"
-                app:civ_border_color="#FE2C54"/>
-
-
-
-            <TextView
-                android:id="@+id/titleText"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="40dp"
-                android:gravity="start"
-                android:text="Update Your Profile"
-                android:textSize="25sp"
-                android:layout_marginLeft="10dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:orientation="vertical">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="10dp"
+                <!-- TOOLBAR -->
+                <androidx.appcompat.widget.Toolbar
+                    android:id="@+id/toolbarMain"
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="@drawable/toolbar_gradient"
+                    android:paddingHorizontal="8dp">
 
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:background="@android:color/transparent"
-                app:boxBackgroundColor="@android:color/transparent">
+                    <ImageView
+                        android:id="@+id/settingBackBtn"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/back"
+                        android:layout_gravity="center_vertical" />
+                </androidx.appcompat.widget.Toolbar>
 
-                <EditText
-                    android:id="@+id/settingUpdateName"
+                <!-- PROFILE IMAGE -->
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/settingUpdateImage"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    android:layout_marginTop="32dp"
+                    android:layout_marginBottom="16dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/person"
+                    app:civ_border_width="2dp"
+                    app:civ_border_color="#FE2C54" />
+
+                <!-- TITLE -->
+                <TextView
+                    android:id="@+id/titleText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:ems="10"
-                    android:text="@={viewModel.name}"
-                    android:hint="Name"
-                    android:importantForAutofill="no"
-                    android:inputType="textCapWords"
-                    android:maxLength="25"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="0dp"
-                    tools:background="@android:color/transparent" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:text="Update Your Profile"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#222222"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="24dp" />
 
+                <!-- NAME INPUT (SAME STYLE AS SIGN IN / SIGN UP) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/FauxGlassOutlinedInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="24dp">
 
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/settingUpdateName"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:hint="Name"
+                        android:text="@={viewModel.name}"
+                        android:inputType="textCapWords"
+                        android:textColor="#222222"
+                        android:textColorHint="#66000000"
+                        android:importantForAutofill="no" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <Button
-                android:id="@+id/settingUpdateButton"
-                android:layout_width="150dp"
-                android:layout_height="60dp"
-                android:layout_marginTop="20dp"
-                android:backgroundTint="#191970"
-                android:text="Update"
-                android:layout_gravity="center"
-                android:textSize="16sp"
-                />
+                <!-- UPDATE BUTTON -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/settingUpdateButton"
+                    android:layout_width="180dp"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center"
+                    android:text="Update"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:backgroundTint="#6626C6DA"
+                    app:cornerRadius="16dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#80FFFFFF"
+                    android:elevation="6dp" />
 
-            <androidx.constraintlayout.widget.Guideline
-                android:id="@+id/guideline50"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                app:layout_constraintGuide_percent=".5" />
+                <!-- BOTTOM SPACING -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp" />
 
-            <View
-                android:layout_width="wrap_content"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+            </LinearLayout>
+        </ScrollView>
 
-
-
-
-
-        </LinearLayout>
-    </ScrollView>
+    </FrameLayout>
 
 </layout>
