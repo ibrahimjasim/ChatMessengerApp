@@ -27,7 +27,7 @@ class ChatAppViewModel : ViewModel() {
 
     private val usersRepo = UserRepository()
     private val messageRepo = MessageRepository()
-    private val recentChatRepo = ChatListRepository() // ✅ consistent name
+    private val recentChatRepo = ChatListRepository()
 
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         throwable.printStackTrace()
@@ -44,8 +44,7 @@ class ChatAppViewModel : ViewModel() {
         messageRepo.getMessages(friend)
 
     fun getRecentUsers(): LiveData<List<RecentChats>> =
-        recentChatRepo.getAllChatList() // ✅ fixed
-
+        recentChatRepo.getAllChatList() //
     fun sendMessage(sender: String, receiver: String, friendname: String, friendimage: String) =
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
 
@@ -54,7 +53,7 @@ class ChatAppViewModel : ViewModel() {
             val msg = message.value?.trim().orEmpty()
             if (msg.isEmpty() || receiver.isBlank()) return@launch
 
-            val chatRoomId = listOf(sender, receiver).sorted().joinToString("") // ✅ fixed
+            val chatRoomId = listOf(sender, receiver).sorted().joinToString("")
 
             val hashMap = hashMapOf<String, Any>(
                 "sender" to sender,
@@ -106,7 +105,7 @@ class ChatAppViewModel : ViewModel() {
                         )
 
                     if (taskmessage.isSuccessful) {
-                        message.postValue("") // ✅ safe from background thread
+                        message.postValue("")
                     }
                 }
         }
