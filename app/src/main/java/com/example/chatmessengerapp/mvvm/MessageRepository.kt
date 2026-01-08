@@ -11,37 +11,31 @@ class MessageRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
 
-    fun getMessages(friendid: String): LiveData<List<Messages>> {
+    fun getMessages(friendId: String): LiveData<List<Messages>> {
         val messagesLiveData = MutableLiveData<List<Messages>>()
 
+        val chatRoomId = listOf(Utils.getUidLoggedIn(), friendId)
+            .sorted()
+            .joinToString(separator = "")
 
-        val uniqueIdList = listOf(Utils.getUiLogged(), friendid).sorted()
-        val chatRoomId = uniqueIdList.joinToString(separator = "")
+        firestore.collection("Messages")
+            .document(chatRoomId)
+            .collection("chats")
+            .orderBy("time", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
 
-        firestore.collection("Messages").document(chatRoomId).collection("chats")
-            .orderBy("time", Query.Direction.ASCENDING).addSnapshotListener { value, error ->
-
-                if (error != null) {
+                if (error != null || snapshot == null) {
+                    messagesLiveData.postValue(emptyList())
                     return@addSnapshotListener
                 }
 
-                val tempList = mutableListOf<Messages>()
-
-                if (value != null && !value.isEmpty) {
-                    value.documents.forEach { document ->
-                        val messageModel = document.toObject(Messages::class.java)
-
-                        if (messageModel != null) {
-
-                            if ((messageModel.sender == Utils.getUiLogged() && messageModel.receiver == friendid) ||
-                                (messageModel.sender == friendid && messageModel.receiver == Utils.getUiLogged())) {
-                                tempList.add(messageModel)
-                            }
-                        }
-                    }
-                    messagesLiveData.value = tempList
+                val list = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Messages::class.java)
                 }
+
+                messagesLiveData.postValue(list)
             }
+
         return messagesLiveData
     }
 }
