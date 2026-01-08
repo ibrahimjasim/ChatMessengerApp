@@ -11,7 +11,7 @@ data class RecentChats(
     val sender: String? = "",
     val message: String? = "",
     val person: String? = "",
-    val status: String? = ""
+    val status: String? = null
 ) : Parcelable {
 
     constructor(parcel: Parcel) : this(

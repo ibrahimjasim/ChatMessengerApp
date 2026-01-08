@@ -17,6 +17,8 @@ class RecentChatAdapter : RecyclerView.Adapter<MyChatListHolder>() {
     var chatShitModal = RecentChats()
 
 
+
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyChatListHolder {
 
         val view = LayoutInflater.from(parent.context).inflate(R.layout.recentchatlist, parent, false)
@@ -59,6 +61,15 @@ class RecentChatAdapter : RecyclerView.Adapter<MyChatListHolder>() {
 
         holder.timeView.setText(chatlist.time!!.substring(0, 5))
 
+        if(chatlist.status == "online"){
+            holder.onlineIndicator.visibility = View.VISIBLE
+            holder.onlineIndicator.setBackgroundResource(R.drawable.onlinestatus)
+        }else{
+            holder.onlineIndicator.visibility = View.VISIBLE
+            holder.onlineIndicator.setBackgroundResource(R.drawable.offlinestatus)
+        }
+
+
         holder.itemView.setOnClickListener {
             listener?.getOnChatCLickedItem(position, chatlist)
 
@@ -83,6 +94,9 @@ class MyChatListHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     val userName: TextView = itemView.findViewById(R.id.recentChatTextName)
     val lastMessage: TextView = itemView.findViewById(R.id.recentChatTextLastMessage)
     val timeView: TextView = itemView.findViewById(R.id.recentChatTextTime)
+
+    val onlineIndicator: View = itemView.findViewById(R.id.onlineIndicator)
+
 
 
 }

@@ -9,69 +9,39 @@ import com.google.firebase.firestore.Query
 
 class MessageRepository {
 
-    val firestore = FirebaseFirestore.getInstance()
-
-
-
+    private val firestore = FirebaseFirestore.getInstance()
 
     fun getMessages(friendid: String): LiveData<List<Messages>> {
-
-        val messages = MutableLiveData<List<Messages>>()
-
-        val uniqueId = listOf(Utils.getUidLoggedIn(), friendid).sorted()
-        uniqueId.joinToString(separator = "")
+        val messagesLiveData = MutableLiveData<List<Messages>>()
 
 
+        val uniqueIdList = listOf(Utils.getUiLogged(), friendid).sorted()
+        val chatRoomId = uniqueIdList.joinToString(separator = "")
 
+        firestore.collection("Messages").document(chatRoomId).collection("chats")
+            .orderBy("time", Query.Direction.ASCENDING).addSnapshotListener { value, error ->
 
-        firestore.collection("Messages").document(uniqueId.toString()).collection("chats").orderBy("time", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshot, exception ->
-
-                if (exception != null) {
-
+                if (error != null) {
                     return@addSnapshotListener
                 }
 
-                val messagesList = mutableListOf<Messages>()
+                val tempList = mutableListOf<Messages>()
 
-
-                if (!snapshot!!.isEmpty) {
-
-
-                    snapshot.documents.forEach { document ->
-
+                if (value != null && !value.isEmpty) {
+                    value.documents.forEach { document ->
                         val messageModel = document.toObject(Messages::class.java)
 
+                        if (messageModel != null) {
 
-                        if (messageModel!!.sender.equals(Utils.getUidLoggedIn()) && messageModel.receiver.equals(
-                                friendid
-                            ) ||
-                            messageModel.sender.equals(friendid) && messageModel.receiver.equals(
-                                Utils.getUidLoggedIn()
-                            )
-                        ) {
-                            messageModel.let {
-
-
-                                messagesList.add(it!!)
-
-
+                            if ((messageModel.sender == Utils.getUiLogged() && messageModel.receiver == friendid) ||
+                                (messageModel.sender == friendid && messageModel.receiver == Utils.getUiLogged())) {
+                                tempList.add(messageModel)
                             }
                         }
                     }
-
-
-
-                    messages.value = messagesList
-
+                    messagesLiveData.value = tempList
                 }
             }
-
-        return messages
-
-
+        return messagesLiveData
     }
-
-
-
 }
