@@ -1,5 +1,6 @@
 package com.example.chatmessengerapp.notifications
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import androidx.core.app.RemoteInput
@@ -7,13 +8,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.text.Html
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat.getSystemService
 import com.example.chatmessengerapp.MainActivity
+import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.SharedPrefs
 import kotlin.jvm.java
 import kotlin.random.Random
+
+private const val CHANNEL_ID = "my_channel"
+
 
 class FirebaseService : FirebaseMessagingService() {
     companion object {
@@ -75,6 +81,12 @@ class FirebaseService : FirebaseMessagingService() {
         // If we have the notifacation id then we can use taht id and send reply
         sharedCustomePref.setIntValue("values", notificationId)
 
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID).setContentText(Html.("<b>${message.data["title"]}</b>: ${message.data["message"]}")).
+        setSmallIcon(R.drawable.ic_launcher_foreground).setAutoCancel(true).setContentIntent(pendingIntent).addAction(replyAction).build()
+
+
+
+        notificationManager.notify(notificationId, notification)
 
 
 
@@ -93,6 +105,26 @@ class FirebaseService : FirebaseMessagingService() {
 
 
 
+
+
+
+
+
+    }
+
+    private fun createNotificationChannel(notificationManager: NotificationManager) {
+
+        val channelName = "channelName"
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            channelName,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "My channel description"
+            enableLights(true)
+            lightColor = R.color.teal_700
+
+        }
 
     }
 }
