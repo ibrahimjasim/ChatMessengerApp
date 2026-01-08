@@ -1,6 +1,10 @@
 package com.example.chatmessengerapp.notifications.entity
 
-class NotificationData  (val title: String, val message: String){
-
-
-}
+data class NotificationData(
+    val senderId: String = "",
+    val senderName: String = "",
+    val senderImage: String = "",
+    val receiverId: String = "",
+    val chatRoomId: String = "",
+    val message: String = ""
+)
