@@ -3,128 +3,131 @@ package com.example.chatmessengerapp.notifications
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import androidx.core.app.RemoteInput
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
-import android.text.Html
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.app.RemoteInput
 import com.example.chatmessengerapp.MainActivity
 import com.example.chatmessengerapp.R
-import com.example.chatmessengerapp.SharedPrefs
-import kotlin.jvm.java
-import kotlin.random.Random
-
-private const val CHANNEL_ID = "my_channel"
-
+import com.example.chatmessengerapp.Utils
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessagingService
+import com.google.firebase.messaging.RemoteMessage
 
 class FirebaseService : FirebaseMessagingService() {
-    companion object {
-        private const val KEY_REPLY_TEXT = "KEY_REPLY_TEXT"
 
-        var sharedPref: SharedPreferences? = null
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
 
-        var token: String?
-            get() {
-                return sharedPref?.getString("token", "")
-            }
-            set(value) {
-                sharedPref?.edit()?.putString("token", value)?.apply()
-            }
+        val uid = Utils.getUidLoggedIn()
+        if (uid.isBlank()) return
 
-
+        FirebaseFirestore.getInstance()
+            .collection("Tokens")
+            .document(uid)
+            .set(mapOf("token" to token))
     }
 
-
-    override fun onNewToken(newToken: String) {
-        super.onNewToken(newToken)
-        token = newToken
-
-
-    }
-
-    @RequiresApi(Build.VERSION_CODES.S)
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
-        val intent = Intent(this, MainActivity::class.java)
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notificationId = Random.nextInt()
+        val data = message.data
+        if (data.isEmpty()) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+        // Expecting DATA payload
+        val senderId = data["senderId"].orEmpty()
+        val senderName = data["senderName"].orEmpty()
+        val senderImage = data["senderImage"].orEmpty()
+        val receiverId = data["receiverId"].orEmpty()
+        val text = data["message"].orEmpty()
 
-            createNotificationChannel(notificationManager)
+        if (senderId.isBlank() || receiverId.isBlank() || text.isBlank()) return
 
-        }
+        // ✅ Always compute chatRoomId exactly like your app does (sorted IDs)
+        val chatRoomId = listOf(senderId, receiverId).sorted().joinToString("")
 
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
-
-
-        // FOR REPLYING TO NOTIFICATION
-
-        val remoteInput = androidx.core.app.RemoteInput.Builder(KEY_REPLY_TEXT).setLabel("Reply").build()
-        val replyIntent = Intent(this, NotificationsReply::class.java)
-
-
-
-        // For reply action we are alos passing pending intent
-
-        val replyPendingIntent = PendingIntent.getBroadcast(this, 0, replyIntent, PendingIntent.FLAG_MUTABLE)
-        val replyAction = NotificationCompat.Action.Builder(0, "Reply", replyPendingIntent).addRemoteInput(remoteInput).build()
-
-
-        val sharedCustomePref = SharedPrefs(applicationContext)
-        // If we have the notifacation id then we can use taht id and send reply
-        sharedCustomePref.setIntValue("values", notificationId)
-
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID).setContentText(Html.("<b>${message.data["title"]}</b>: ${message.data["message"]}")).
-        setSmallIcon(R.drawable.ic_launcher_foreground).setAutoCancel(true).setContentIntent(pendingIntent).addAction(replyAction).build()
-
-
-
-        notificationManager.notify(notificationId, notification)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        showMessageNotification(
+            senderId = senderId,
+            senderName = senderName,
+            senderImage = senderImage,
+            receiverId = receiverId,
+            chatRoomId = chatRoomId,
+            messageText = text
+        )
     }
 
-    private fun createNotificationChannel(notificationManager: NotificationManager) {
+    private fun showMessageNotification(
+        senderId: String,
+        senderName: String,
+        senderImage: String,
+        receiverId: String,
+        chatRoomId: String,
+        messageText: String
+    ) {
+        val channelId = Utils.CHANNEL_ID
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        val channelName = "channelName"
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            channelName,
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "My channel description"
-            enableLights(true)
-            lightColor = R.color.teal_700
-
+        // Channel (Android 8+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Chat messages",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            manager.createNotificationChannel(channel)
         }
 
+        // ✅ Tap notification -> open app (MainActivity)
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+
+        val contentPendingIntent = PendingIntent.getActivity(
+            this,
+            chatRoomId.hashCode(),
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // ✅ Inline reply
+        val remoteInput = RemoteInput.Builder(NotificationsReply.KEY_TEXT_REPLY)
+            .setLabel("Reply")
+            .build()
+
+        val replyIntent = Intent(this, NotificationsReply::class.java).apply {
+            putExtra(NotificationsReply.EXTRA_SENDER_ID, senderId)
+            putExtra(NotificationsReply.EXTRA_SENDER_NAME, senderName)
+            putExtra(NotificationsReply.EXTRA_SENDER_IMAGE, senderImage)
+            putExtra(NotificationsReply.EXTRA_RECEIVER_ID, receiverId)
+            putExtra(NotificationsReply.EXTRA_CHATROOM_ID, chatRoomId)
+        }
+
+        val replyPendingIntent = PendingIntent.getBroadcast(
+            this,
+            chatRoomId.hashCode(),
+            replyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val replyAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_launcher_foreground, // replace with your own icon if you have
+            "Reply",
+            replyPendingIntent
+        )
+            .addRemoteInput(remoteInput)
+            .setAllowGeneratedReplies(true)
+            .build()
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground) // replace with app icon if you want
+            .setContentTitle(senderName.ifBlank { "New message" })
+            .setContentText(messageText)
+            .setContentIntent(contentPendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .addAction(replyAction)
+            .build()
+
+        manager.notify(chatRoomId.hashCode(), notification)
     }
 }
