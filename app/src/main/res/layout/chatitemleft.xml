@@ -1,39 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <layout>
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:padding="8dp"
         android:gravity="start"
-        android:orientation="horizontal"
-        android:layout_height="wrap_content">
+        android:orientation="horizontal">
 
-
-
-        <TextView
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dp"
-            android:padding="8dp"
-            android:id="@+id/show_message"
-            android:text="Hello"
-            android:visibility="visible"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:background="@drawable/rounded_rectangle_secondary"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="14:00"
-            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_rectangle_glass_right"
+            android:padding="10dp">
 
-            android:id="@+id/timeView"
-            android:textStyle="italic"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="10dp"/>
+            <TextView
+                android:id="@+id/show_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hello"
+                android:textSize="15sp"
+                android:textColor="#222222" />
 
+            <TextView
+                android:id="@+id/timeView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="14:00"
+                android:textSize="11sp"
+                android:textColor="#666666"
+                android:layout_marginTop="4dp"
+                android:gravity="end" />
 
-
+        </LinearLayout>
 
     </LinearLayout>
 
