@@ -2,16 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Network for Firebase / Firestore / Retrofit -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Android 13+ notifications permission  -->
+    <!-- Android 13+ notifications runtime permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!--  needed   ick images (gallery) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
-    <!-- If targeting 33+, you should use READ_MEDIA_IMAGES instead:
+    <!-- Storage permission changes (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- (Optional) If you still support < 33 and you truly need it, keep this.
+         With minSdk 26 it's fine to include both; Android will ignore unknown ones.
     -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <application
         android:name=".MyApplication"
@@ -25,7 +30,7 @@
         android:theme="@style/Theme.ChatMessengerApp"
         tools:targetApi="33">
 
-        <!-- FCM Service (MUST be directly under <application>, not inside an activity) -->
+        <!--  Firebase Cloud Messaging Service -->
         <service
             android:name=".notifications.FirebaseService"
             android:exported="false">
@@ -34,7 +39,7 @@
             </intent-filter>
         </service>
 
-        <!-- Reply receiver -->
+        <!--  Reply receiver (for notification inline reply) -->
         <receiver
             android:name=".notifications.NotificationsReply"
             android:exported="false" />
