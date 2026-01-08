@@ -8,35 +8,28 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class UserRepository {
 
-    private var firestore = FirebaseFirestore.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
-
-    fun getUser(): LiveData<List<Users>> {
-
-        val users = MutableLiveData<List<Users>>()
-
+    fun getUsers(): LiveData<List<Users>> {
+        val usersLiveData = MutableLiveData<List<Users>>()
 
         firestore.collection("Users").addSnapshotListener { snapshot, exception ->
-
-
-            if (exception != null) {
+            if (exception != null || snapshot == null) {
+                usersLiveData.postValue(emptyList())
                 return@addSnapshotListener
             }
 
             val usersList = mutableListOf<Users>()
-            snapshot?.documents?.forEach { document ->
-
+            snapshot.documents.forEach { document ->
                 val user = document.toObject(Users::class.java)
-
-                // Check if the user is not the currently logged-in user
-                if (user != null && user.userid != Utils.getUiLogged()) {
+                if (user != null && user.userid != Utils.getUidLoggedIn()) {
                     usersList.add(user)
                 }
             }
-            // Update LiveData outside the loop
-            users.value = usersList
+
+            usersLiveData.postValue(usersList)
         }
 
-        return users
+        return usersLiveData
     }
 }
