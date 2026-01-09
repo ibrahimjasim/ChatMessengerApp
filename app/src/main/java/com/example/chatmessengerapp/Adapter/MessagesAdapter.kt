@@ -53,8 +53,7 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
             holder.messageText.text = message.message ?: ""
         }
 
-        val time = message.time.orEmpty()
-        holder.timeOfSent.text = if (time.length >= 5) time.take(5) else time
+        holder.timeOfSent.text = Utils.formatTime(message.time)
     }
 
     override fun getItemViewType(position: Int): Int {

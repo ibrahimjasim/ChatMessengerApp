@@ -48,10 +48,10 @@ class ChatAppViewModel : ViewModel() {
 
     fun getRecentUsers(): LiveData<List<RecentChats>> = recentChatRepo.getAllChatList()
 
-    fun sendTextMessage(sender: String, receiver: String, friendname: String, friendimage: String) =
+    fun sendTextMessage(sender: String, receiver: String, friendname: String, friendimage: String, messageText: String) =
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-            val msg = message.value?.trim()
-            if (msg.isNullOrEmpty()) return@launch
+            val msg = messageText.trim()
+            if (msg.isEmpty()) return@launch
 
             val chatRoomId = listOf(sender, receiver).sorted().joinToString("")
             val time = Utils.getTime()
@@ -81,12 +81,12 @@ class ChatAppViewModel : ViewModel() {
                 firestore.runBatch { batch ->
                     val newMessageRef = firestore.collection("Messages").document(chatRoomId).collection("chats").document()
                     batch.set(newMessageRef, messageData)
-                    val senderRecentRef = firestore.collection("Conversation\${sender}").document(receiver)
+                    val senderRecentRef = firestore.collection("Conversation${sender}").document(receiver)
                     batch.set(senderRecentRef, recentSenderHashMap)
-                    val receiverRecentRef = firestore.collection("Conversation\${receiver}").document(sender)
+                    val receiverRecentRef = firestore.collection("Conversation${receiver}").document(sender)
                     batch.set(receiverRecentRef, recentReceiverHashMap)
                 }.await()
-                message.postValue("")
+                message.postValue("") // This will clear the EditText via data binding
             } catch (e: Exception) {
                 Log.e("ChatAppViewModel", "Error sending text message", e)
             }
@@ -124,9 +124,9 @@ class ChatAppViewModel : ViewModel() {
                 firestore.runBatch { batch ->
                     val newMessageRef = firestore.collection("Messages").document(chatRoomId).collection("chats").document()
                     batch.set(newMessageRef, messageData)
-                    val senderRecentRef = firestore.collection("Conversation\${sender}").document(receiver)
+                    val senderRecentRef = firestore.collection("Conversation${sender}").document(receiver)
                     batch.set(senderRecentRef, recentSenderHashMap)
-                    val receiverRecentRef = firestore.collection("Conversation\${receiver}").document(sender)
+                    val receiverRecentRef = firestore.collection("Conversation${receiver}").document(sender)
                     batch.set(receiverRecentRef, recentReceiverHashMap)
                 }.await()
             } catch (e: Exception) {

@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.R
+import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.module.RecentChats
 import de.hdodenhof.circleimageview.CircleImageView
 
@@ -41,7 +42,7 @@ class RecentChatAdapter : RecyclerView.Adapter<MyChatListHolder>() {
 
         Glide.with(holder.itemView.context).load(chatlist.friendsimage).into(holder.imageView)
 
-        holder.timeView.text = chatlist.time?.substring(0, 5)
+        holder.timeView.text = Utils.formatTime(chatlist.time)
 
         holder.itemView.setOnClickListener {
             onChatClicked?.invoke(chatlist)
