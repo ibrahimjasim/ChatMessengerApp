@@ -148,26 +148,53 @@ class ChatAppViewModel : ViewModel() {
 
     fun updateProfile() = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
         val context = MyApplication.instance.applicationContext
-        val updates = hashMapOf<String, Any>()
+        val myUid = Utils.getUidLoggedIn()
+
         val newName = name.value?.trim().orEmpty()
         val newImage = imageUrl.value?.trim().orEmpty()
 
+        val userUpdates = hashMapOf<String, Any>()
         if (newName.isNotEmpty()) {
-            updates["username"] = newName
+            userUpdates["username"] = newName
         }
         if (newImage.isNotEmpty()) {
-            updates["imageUrl"] = newImage
+            userUpdates["imageUrl"] = newImage
         }
 
-        if (updates.isEmpty()) {
+        if (userUpdates.isEmpty()) {
             Toast.makeText(context, "Nothing to update", Toast.LENGTH_SHORT).show()
             return@launch
         }
 
-        firestore.collection("Users").document(Utils.getUidLoggedIn()).update(updates).addOnSuccessListener {
+        try {
+            // 1. Update the main user profile
+            firestore.collection("Users").document(myUid).update(userUpdates).await()
+
+            // 2. Get all conversations this user is a part of
+            val myConversations = firestore.collection("Conversation$myUid").get().await()
+
+            // 3. Update the user's info in each of those conversations for the other person
+            for (doc in myConversations.documents) {
+                val friendId = doc.id
+
+                val friendConversationUpdates = hashMapOf<String, Any>()
+                if (newName.isNotEmpty()) {
+                    friendConversationUpdates["name"] = newName
+                }
+                if (newImage.isNotEmpty()) {
+                    friendConversationUpdates["friendsimage"] = newImage
+                }
+
+                if (friendConversationUpdates.isNotEmpty()) {
+                    firestore.collection("Conversation$friendId").document(myUid).update(friendConversationUpdates).await()
+                }
+            }
+
             Toast.makeText(context, "Profile Updated", Toast.LENGTH_SHORT).show()
-        }.addOnFailureListener {
-            Toast.makeText(context, "Update failed", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Log.e("ChatAppViewModel", "Error updating profile", e)
+            Toast.makeText(context, "Update failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }
