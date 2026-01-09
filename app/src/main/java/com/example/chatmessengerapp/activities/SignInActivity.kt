@@ -8,15 +8,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.example.chatmessengerapp.MainActivity
 import com.example.chatmessengerapp.R
-import com.example.chatmessengerapp.activities.SignUpActivity
 import com.example.chatmessengerapp.databinding.ActivitySignInBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 
 class SignInActivity : AppCompatActivity() {
 
-    private lateinit var email: String
-    private lateinit var password: String
     private lateinit var auth: FirebaseAuth
     private lateinit var progressDialogSignIn: ProgressDialog
     private lateinit var signInBinding: ActivitySignInBinding
@@ -30,16 +27,15 @@ class SignInActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
 
         // IF user has logged in
-        //user has to log in only once
-
-        //if (auth.currentUser != null) {
-
+        // user has to log in only once
+        // if (auth.currentUser != null) {
         //  startActivity(Intent(this, MainActivity::class.java))
-
-
-        //}
+        //  finish()
+        // }
 
         progressDialogSignIn = ProgressDialog(this)
+        progressDialogSignIn.setMessage("Signing In")
+
 
         signInBinding.signInTextToSignUp.setOnClickListener {
             startActivity(Intent(this, SignUpActivity::class.java))
@@ -47,94 +43,67 @@ class SignInActivity : AppCompatActivity() {
 
         signInBinding.loginButton.setOnClickListener {
 
-            email = signInBinding.loginetemail.text.toString()
-            password = signInBinding.loginetpassword.text.toString()
+            val email = signInBinding.loginetemail.text.toString().trim()
+            val password = signInBinding.loginetpassword.text.toString().trim()
 
-            if (signInBinding.loginetemail.text.isEmpty()) {
-
+            var isValid = true
+            if (email.isEmpty()) {
                 Toast.makeText(this, "Enter Email", Toast.LENGTH_SHORT).show()
-
+                isValid = false
             }
 
-            if (signInBinding.loginetpassword.text.isEmpty()) {
-
-                Toast.makeText(this, "Enter PAssword", Toast.LENGTH_SHORT).show()
-
+            if (password.isEmpty()) {
+                Toast.makeText(this, "Enter Password", Toast.LENGTH_SHORT).show()
+                isValid = false
             }
 
-            if (signInBinding.loginetemail.text.isNotEmpty() && signInBinding.loginetpassword.text.isNotEmpty()) {
-
+            if (isValid) {
                 signIn(password, email)
-
             }
-
-
         }
-
-
     }
 
     private fun signIn(password: String, email: String) {
-
         progressDialogSignIn.show()
-        progressDialogSignIn.setMessage("Signing In")
-
-
         auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener {
-
-                if (it.isSuccessful) {
-
+            .addOnCompleteListener { task ->
+                if (progressDialogSignIn.isShowing) {
                     progressDialogSignIn.dismiss()
+                }
 
-                    startActivity(Intent(this, MainActivity::class.java))
-
+                if (task.isSuccessful) {
+                    val intent = Intent(this, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
                 } else {
-                    progressDialogSignIn.dismiss()
-                    Toast.makeText(this,"Error", Toast.LENGTH_SHORT).show()
-
-
+                    val exception = task.exception
+                    when (exception) {
+                        is FirebaseAuthInvalidCredentialsException -> {
+                            Toast.makeText(this, "Invalid email or password.", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            Toast.makeText(this, "Authentication failed: ${exception?.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
                 }
-
-
-            }.addOnFailureListener { exception ->
-
-
-                when (exception) {
-
-                    is FirebaseAuthInvalidCredentialsException ->{
-                        Toast.makeText(this,"Error", Toast.LENGTH_SHORT).show()
-
-
-                    } else->{
-
-                    //other Exceptions
-                    Toast.makeText(this,"Auth failed", Toast.LENGTH_SHORT).show()
-
-
-                }
-
-                }
-
-
-
-
-
-
             }
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         super.onBackPressed()
-        progressDialogSignIn.dismiss()
+        if (progressDialogSignIn.isShowing) {
+            progressDialogSignIn.dismiss()
+        }
         finishAffinity()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        progressDialogSignIn.dismiss()
+        // Dismiss dialog to prevent window leaks
+        if (progressDialogSignIn.isShowing) {
+            progressDialogSignIn.dismiss()
+        }
     }
-
-
 }
