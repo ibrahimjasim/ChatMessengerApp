@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="FauxGlassOutlinedInput"
+        parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <!-- Important: outline-mode -->
+        <item name="boxBackgroundMode">outline</item>
+
+        <!-- Faux-glass background -->
+        <item name="boxBackgroundColor">#55FFFFFF</item>
+
+        <!-- Ram (always visible) -->
+        <item name="boxStrokeColor">#CC000000</item>
+        <item name="boxStrokeWidth">2dp</item>
+
+        <!-- Rounded corner -->
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+
+        <!-- Small depth -->
+        <item name="android:elevation">4dp</item>
+
+    </style>
+
+</resources>
