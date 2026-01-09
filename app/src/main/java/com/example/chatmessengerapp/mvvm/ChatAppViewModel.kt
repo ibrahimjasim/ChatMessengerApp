@@ -127,43 +127,33 @@ class ChatAppViewModel : ViewModel() {
     }
 
     fun updateProfile() = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-
         val context = MyApplication.instance.applicationContext
 
+        val updates = hashMapOf<String, Any>()
         val newName = name.value?.trim().orEmpty()
         val newImage = imageUrl.value?.trim().orEmpty()
 
-        if (newName.isEmpty() || newImage.isEmpty()) return@launch
+        if (newName.isNotEmpty()) {
+            updates["username"] = newName
+        }
 
-        val hashMapUser = hashMapOf<String, Any>(
-            "username" to newName,
-            "imageUrl" to newImage
-        )
+        if (newImage.isNotEmpty()) {
+            updates["imageUrl"] = newImage
+        }
+
+        if (updates.isEmpty()) {
+            Toast.makeText(context, "Nothing to update", Toast.LENGTH_SHORT).show()
+            return@launch
+        }
 
         firestore.collection("Users")
             .document(Utils.getUidLoggedIn())
-            .update(hashMapUser)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    Toast.makeText(context, "Updated", Toast.LENGTH_SHORT).show()
-                }
+            .update(updates)
+            .addOnSuccessListener {
+                Toast.makeText(context, "Profile Updated", Toast.LENGTH_SHORT).show()
             }
-
-        val mysharedPrefs = SharedPrefs(context)
-        val friendid = mysharedPrefs.getValue("friendid") ?: return@launch
-
-        val hashMapUpdate = hashMapOf<String, Any>(
-            "friendsimage" to newImage,
-            "name" to newName,
-            "person" to newName
-        )
-
-        firestore.collection("Conversation$friendid")
-            .document(Utils.getUidLoggedIn())
-            .update(hashMapUpdate)
-
-        firestore.collection("Conversation${Utils.getUidLoggedIn()}")
-            .document(friendid)
-            .update("person", "you")
+            .addOnFailureListener {
+                Toast.makeText(context, "Update failed", Toast.LENGTH_SHORT).show()
+            }
     }
 }
