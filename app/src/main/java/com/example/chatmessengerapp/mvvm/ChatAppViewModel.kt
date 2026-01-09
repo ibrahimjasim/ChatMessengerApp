@@ -1,5 +1,6 @@
 package com.example.chatmessengerapp.mvvm
 
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.LiveData
@@ -13,9 +14,12 @@ import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.module.RecentChats
 import com.example.chatmessengerapp.module.Users
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class ChatAppViewModel : ViewModel() {
 
@@ -24,6 +28,7 @@ class ChatAppViewModel : ViewModel() {
     val message = MutableLiveData<String>()
 
     private val firestore = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
     private val usersRepo = UserRepository()
     private val messageRepo = MessageRepository()
@@ -35,135 +40,134 @@ class ChatAppViewModel : ViewModel() {
 
     init {
         getCurrentUser()
-        // Don't call getRecentUsers() here unless UI observes it.
     }
 
     fun getUsers(): LiveData<List<Users>> = usersRepo.getUsers()
 
-    fun getMessages(friend: String): LiveData<List<Messages>> =
-        messageRepo.getMessages(friend)
+    fun getMessages(friend: String): LiveData<List<Messages>> = messageRepo.getMessages(friend)
 
-    fun getRecentUsers(): LiveData<List<RecentChats>> =
-        recentChatRepo.getAllChatList() //
-    fun sendMessage(sender: String, receiver: String, friendname: String, friendimage: String) =
+    fun getRecentUsers(): LiveData<List<RecentChats>> = recentChatRepo.getAllChatList()
+
+    fun sendTextMessage(sender: String, receiver: String, friendname: String, friendimage: String) =
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-
-            val context = MyApplication.instance.applicationContext
-
-            val msg = message.value?.trim().orEmpty()
-            if (msg.isEmpty() || receiver.isBlank()) return@launch
+            val msg = message.value?.trim()
+            if (msg.isNullOrEmpty()) return@launch
 
             val chatRoomId = listOf(sender, receiver).sorted().joinToString("")
+            val time = Utils.getTime()
 
-            val hashMap = hashMapOf<String, Any>(
+            val messageData = hashMapOf(
                 "sender" to sender,
                 "receiver" to receiver,
                 "message" to msg,
-                "time" to Utils.getTime()
+                "time" to time,
+                "imageUrl" to null
             )
 
-            val friendnamesplit = friendname.split("\\s".toRegex())[0]
-            val mysharedPrefs = SharedPrefs(context)
-            mysharedPrefs.setValue("friendid", receiver)
-            mysharedPrefs.setValue("chatroomid", chatRoomId)
-            mysharedPrefs.setValue("friendname", friendnamesplit)
-            mysharedPrefs.setValue("friendimage", friendimage)
+            val myProfile = firestore.collection("Users").document(sender).get().await().toObject(Users::class.java)
 
-            firestore.collection("Messages")
-                .document(chatRoomId)
-                .collection("chats")
-                .document(Utils.getTime())
-                .set(hashMap)
-                .addOnCompleteListener { taskmessage ->
+            val recentSenderHashMap = hashMapOf(
+                "friendid" to receiver, "time" to time, "sender" to sender, "message" to msg,
+                "friendsimage" to friendimage, "name" to friendname, "person" to "you"
+            )
 
-                    val setHashMap = hashMapOf<String, Any>(
-                        "friendid" to receiver,
-                        "time" to Utils.getTime(),
-                        "sender" to Utils.getUidLoggedIn(),
-                        "message" to msg,
-                        "friendsimage" to friendimage,
-                        "name" to friendname,
-                        "person" to "you"
-                    )
+            val recentReceiverHashMap = hashMapOf(
+                "friendid" to sender, "time" to time, "sender" to sender, "message" to msg,
+                "friendsimage" to (myProfile?.imageUrl ?: ""), "name" to (myProfile?.username ?: ""),
+                "person" to (myProfile?.username ?: "")
+            )
 
-                    firestore.collection("Conversation${Utils.getUidLoggedIn()}")
-                        .document(receiver)
-                        .set(setHashMap)
+            try {
+                firestore.runBatch { batch ->
+                    val newMessageRef = firestore.collection("Messages").document(chatRoomId).collection("chats").document()
+                    batch.set(newMessageRef, messageData)
+                    val senderRecentRef = firestore.collection("Conversation\${sender}").document(receiver)
+                    batch.set(senderRecentRef, recentSenderHashMap)
+                    val receiverRecentRef = firestore.collection("Conversation\${receiver}").document(sender)
+                    batch.set(receiverRecentRef, recentReceiverHashMap)
+                }.await()
+                message.postValue("")
+            } catch (e: Exception) {
+                Log.e("ChatAppViewModel", "Error sending text message", e)
+            }
+        }
 
-                    firestore.collection("Conversation$receiver")
-                        .document(Utils.getUidLoggedIn())
-                        .set(
-                            hashMapOf(
-                                "friendid" to Utils.getUidLoggedIn(),
-                                "time" to Utils.getTime(),
-                                "sender" to receiver,
-                                "message" to msg,
-                                "friendsimage" to (imageUrl.value.orEmpty()),
-                                "name" to (name.value.orEmpty()),
-                                "person" to (name.value.orEmpty())
-                            )
-                        )
+    fun sendImageMessage(sender: String, receiver: String, friendname: String, friendimage: String, imageUri: Uri) =
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            try {
+                val storageRef = storage.reference.child("chat_images/${UUID.randomUUID()}")
+                val uploadTask = storageRef.putFile(imageUri).await()
+                val imageUrl = uploadTask.storage.downloadUrl.await().toString()
 
-                    if (taskmessage.isSuccessful) {
-                        message.postValue("")
-                    }
-                }
+                val chatRoomId = listOf(sender, receiver).sorted().joinToString("")
+                val time = Utils.getTime()
+                val imageMessageText = "Image"
+
+                val messageData = hashMapOf(
+                    "sender" to sender, "receiver" to receiver, "message" to null,
+                    "time" to time, "imageUrl" to imageUrl
+                )
+
+                val myProfile = firestore.collection("Users").document(sender).get().await().toObject(Users::class.java)
+
+                val recentSenderHashMap = hashMapOf(
+                    "friendid" to receiver, "time" to time, "sender" to sender, "message" to imageMessageText,
+                    "friendsimage" to friendimage, "name" to friendname, "person" to "you"
+                )
+
+                val recentReceiverHashMap = hashMapOf(
+                    "friendid" to sender, "time" to time, "sender" to sender, "message" to imageMessageText,
+                    "friendsimage" to (myProfile?.imageUrl ?: ""), "name" to (myProfile?.username ?: ""),
+                    "person" to (myProfile?.username ?: "")
+                )
+
+                firestore.runBatch { batch ->
+                    val newMessageRef = firestore.collection("Messages").document(chatRoomId).collection("chats").document()
+                    batch.set(newMessageRef, messageData)
+                    val senderRecentRef = firestore.collection("Conversation\${sender}").document(receiver)
+                    batch.set(senderRecentRef, recentSenderHashMap)
+                    val receiverRecentRef = firestore.collection("Conversation\${receiver}").document(sender)
+                    batch.set(receiverRecentRef, recentReceiverHashMap)
+                }.await()
+            } catch (e: Exception) {
+                Log.e("ChatAppViewModel", "Error sending image message", e)
+            }
         }
 
     fun getCurrentUser() = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
         val context = MyApplication.instance.applicationContext
-
-        firestore.collection("Users")
-            .document(Utils.getUidLoggedIn())
-            .addSnapshotListener { value, _ ->
-                if (value != null && value.exists()) {
-                    val user = value.toObject(Users::class.java)
-                    name.value = user?.username.orEmpty()
-                    imageUrl.value = user?.imageUrl.orEmpty()
-
-                    SharedPrefs(context).setValue("username", user?.username.orEmpty())
-                }
+        firestore.collection("Users").document(Utils.getUidLoggedIn()).addSnapshotListener { value, _ ->
+            if (value != null && value.exists()) {
+                val user = value.toObject(Users::class.java)
+                name.value = user?.username.orEmpty()
+                imageUrl.value = user?.imageUrl.orEmpty()
+                SharedPrefs(context).setValue("username", user?.username.orEmpty())
             }
+        }
     }
 
     fun updateProfile() = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-
         val context = MyApplication.instance.applicationContext
-
+        val updates = hashMapOf<String, Any>()
         val newName = name.value?.trim().orEmpty()
         val newImage = imageUrl.value?.trim().orEmpty()
 
-        if (newName.isEmpty() || newImage.isEmpty()) return@launch
+        if (newName.isNotEmpty()) {
+            updates["username"] = newName
+        }
+        if (newImage.isNotEmpty()) {
+            updates["imageUrl"] = newImage
+        }
 
-        val hashMapUser = hashMapOf<String, Any>(
-            "username" to newName,
-            "imageUrl" to newImage
-        )
+        if (updates.isEmpty()) {
+            Toast.makeText(context, "Nothing to update", Toast.LENGTH_SHORT).show()
+            return@launch
+        }
 
-        firestore.collection("Users")
-            .document(Utils.getUidLoggedIn())
-            .update(hashMapUser)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    Toast.makeText(context, "Updated", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-        val mysharedPrefs = SharedPrefs(context)
-        val friendid = mysharedPrefs.getValue("friendid") ?: return@launch
-
-        val hashMapUpdate = hashMapOf<String, Any>(
-            "friendsimage" to newImage,
-            "name" to newName,
-            "person" to newName
-        )
-
-        firestore.collection("Conversation$friendid")
-            .document(Utils.getUidLoggedIn())
-            .update(hashMapUpdate)
-
-        firestore.collection("Conversation${Utils.getUidLoggedIn()}")
-            .document(friendid)
-            .update("person", "you")
+        firestore.collection("Users").document(Utils.getUidLoggedIn()).update(updates).addOnSuccessListener {
+            Toast.makeText(context, "Profile Updated", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener {
+            Toast.makeText(context, "Update failed", Toast.LENGTH_SHORT).show()
+        }
     }
 }

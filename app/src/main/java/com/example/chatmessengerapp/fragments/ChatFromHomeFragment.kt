@@ -69,7 +69,7 @@ class ChatFromHomeFragment : Fragment() {
 
         // Send
         binding.sendBtn.setOnClickListener {
-            viewModel.sendMessage(
+            viewModel.sendTextMessage(
                 Utils.getUidLoggedIn(),
                 recent.friendid ?: return@setOnClickListener,
                 recent.name ?: "",
