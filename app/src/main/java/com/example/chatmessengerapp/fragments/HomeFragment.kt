@@ -32,9 +32,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import de.hdodenhof.circleimageview.CircleImageView
 
-class HomeFragment : Fragment(),
-    OnItemClickListener,
-    RecentChatAdapter.OnChatClicked {
+class HomeFragment : Fragment(), OnItemClickListener {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
@@ -100,7 +98,10 @@ class HomeFragment : Fragment(),
         rvRecentChats.adapter = recentAdapter
 
         adapter.setOnClickListener(this)
-        recentAdapter.setOnChatClickListener(this)
+        recentAdapter.onChatClicked = {
+            val action = HomeFragmentDirections.actionHomeFragmentToChatFromHomeFragment(it)
+            findNavController().navigate(action)
+        }
 
         // Load users
         viewModel.getUsers().observe(viewLifecycleOwner, Observer { users ->
@@ -188,11 +189,6 @@ class HomeFragment : Fragment(),
 
     override fun onUserSelected(position: Int, users: Users) {
         val action = HomeFragmentDirections.actionHomeFragmentToChatFragment(users)
-        findNavController().navigate(action)
-    }
-
-    override fun onChatClicked(position: Int, chatList: RecentChats) {
-        val action = HomeFragmentDirections.actionHomeFragmentToChatFromHomeFragment(chatList)
         findNavController().navigate(action)
     }
 }
