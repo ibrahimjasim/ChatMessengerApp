@@ -1,11 +1,17 @@
 package com.example.chatmessengerapp.fragments
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
@@ -27,6 +33,15 @@ class ChatFragment : Fragment() {
     private lateinit var binding: FragmentChatBinding
     private lateinit var viewModel: ChatAppViewModel
     private lateinit var adapter: MessageAdapter
+
+    // Modern way to handle activity results for picking an image
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { imageUri ->
+                sendImage(imageUri)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -75,9 +90,9 @@ class ChatFragment : Fragment() {
         }
         binding.messagesRecyclerView.adapter = adapter
 
-        // Send
+        // Send Text
         binding.sendBtn.setOnClickListener {
-            viewModel.sendMessage(
+            viewModel.sendTextMessage(
                 Utils.getUidLoggedIn(),
                 user.userid ?: return@setOnClickListener,
                 user.username ?: "",
@@ -85,10 +100,33 @@ class ChatFragment : Fragment() {
             )
         }
 
+        // Attach Image
+        binding.attachBtn.setOnClickListener {
+            openGallery()
+        }
+
         // Observe messages
         val friendId = user.userid ?: return
         viewModel.getMessages(friendId).observe(viewLifecycleOwner) { list: List<Messages> ->
             adapter.setList(list)
+            binding.messagesRecyclerView.scrollToPosition(list.size - 1)
         }
+    }
+
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        pickImageLauncher.launch(intent)
+    }
+
+    private fun sendImage(imageUri: Uri) {
+        val user = args.users
+        viewModel.sendImageMessage(
+            Utils.getUidLoggedIn(),
+            user.userid ?: return,
+            user.username ?: "",
+            user.imageUrl ?: "",
+            imageUri
+        )
+        Toast.makeText(requireContext(), "Sending image...", Toast.LENGTH_SHORT).show()
     }
 }
