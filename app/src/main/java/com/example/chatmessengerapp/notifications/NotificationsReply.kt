@@ -41,7 +41,7 @@ class NotificationsReply : BroadcastReceiver() {
         db.collection("Messages")
             .document(chatRoomId)
             .collection("chats")
-            .document(time)
+            .document() // Let Firestore generate the ID
             .set(msgMap)
 
         // 2) Update recent chats for ME (Conversation{myId})
