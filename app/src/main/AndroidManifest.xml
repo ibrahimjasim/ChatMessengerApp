@@ -7,6 +7,7 @@
 
     <!-- Camera -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Android 13+ notifications runtime permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
