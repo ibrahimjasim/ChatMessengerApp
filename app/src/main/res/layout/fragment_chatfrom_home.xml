@@ -92,14 +92,22 @@
             android:background="@android:color/white"
             android:minHeight="56dp"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:padding="8dp">
+
+            <ImageButton
+                android:id="@+id/attachBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_gallery"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Attach image" />
 
             <EditText
                 android:id="@+id/editTextMessage"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-
                 android:minHeight="48dp"
                 android:padding="10dp"
                 android:background="@android:color/transparent"
