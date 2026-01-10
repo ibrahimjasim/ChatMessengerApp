@@ -37,11 +37,12 @@ object NotificationsHelper {
             putExtra(NotificationsReply.EXTRA_SENDER_IMAGE, senderImage)
         }
 
+        // The PendingIntent needs to be mutable for RemoteInput to work
         val replyPendingIntent = PendingIntent.getBroadcast(
             context,
             chatRoomId.hashCode(),
             replyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE // Changed to MUTABLE
         )
 
         val replyAction = NotificationCompat.Action.Builder(
