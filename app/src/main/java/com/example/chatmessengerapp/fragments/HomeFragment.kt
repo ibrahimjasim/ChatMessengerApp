@@ -159,7 +159,11 @@ class HomeFragment : Fragment(), OnItemClickListener {
                 if (sender == myId) return@addSnapshotListener
 
                 // Prevent duplicate notification for same message/time
-                val messageId = doc.id + "_" + (doc.getString("time").orEmpty())
+                val time = doc.getTimestamp("time")
+                if (time == null) { // This might happen with very old data, skip it.
+                    return@addSnapshotListener
+                }
+                val messageId = doc.id + "_" + time.seconds
                 if (messageId == lastNotifiedMessageId) return@addSnapshotListener
                 lastNotifiedMessageId = messageId
 
