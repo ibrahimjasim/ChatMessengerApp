@@ -13,9 +13,11 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.chatmessengerapp.activities.SignInActivity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase // IMPORTANT
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,7 +52,6 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         // When the app goes into the background gracefully, tell the Realtime Database we are offline.
-        // This makes the status change faster.
         val uid = Utils.getUidLoggedIn()
         if (uid.isNotBlank()) {
             FirebaseDatabase.getInstance().getReference("/status/$uid").setValue("Offline")
@@ -61,29 +62,45 @@ class MainActivity : AppCompatActivity() {
         val uid = Utils.getUidLoggedIn()
         if (uid.isBlank()) return
 
-        // 1. Create a reference to the Realtime Database for this user's status.
         val userStatusRtdbRef = FirebaseDatabase.getInstance().getReference("/status/$uid")
-        // 2. Create a reference to the user's document in Firestore.
         val userStatusFirestoreRef = firestore.collection("Users").document(uid)
 
-        // 3. Listen for the Realtime Database's connection state.
         val connectedRef = FirebaseDatabase.getInstance().getReference(".info/connected")
-        connectedRef.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
-            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+        connectedRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
                 val connected = snapshot.getValue(Boolean::class.java) ?: false
                 if (connected) {
-                    // We are connected. Set our RTDB status to "Online".
                     userStatusRtdbRef.setValue("Online")
-                    // This is the "last will": if we disconnect unexpectedly, the server will set our status to "Offline".
                     userStatusRtdbRef.onDisconnect().setValue("Offline")
+
+                    // *** ADDED: Write status to Firestore ***
+                    userStatusFirestoreRef.update("status", "Online")
+
+                } else {
+                    // *** ADDED: Handle graceful offline status in Firestore ***
+                    userStatusFirestoreRef.update("status", "Offline")
                 }
             }
-            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
+
+            override fun onCancelled(error: DatabaseError) {
                 Log.w("MainActivity", "RTDB connection listener was cancelled", error.toException())
             }
         })
 
+        // *** ADDED: Listen to RTDB status and update Firestore accordingly ***
+        userStatusRtdbRef.addValueEventListener(object: ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val status = snapshot.getValue(String::class.java)
+                if (status != null) {
+                    userStatusFirestoreRef.update("status", status)
+                }
+            }
 
+            override fun onCancelled(error: DatabaseError) {
+                // Not strictly required to handle this, but good practice
+            }
+
+        })
     }
 
     private fun goToSignInActivity() {
