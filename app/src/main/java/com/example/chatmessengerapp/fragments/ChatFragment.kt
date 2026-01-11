@@ -75,10 +75,12 @@ class ChatFragment : Fragment() {
         }
         binding.messagesRecyclerView.adapter = adapter
 
+        val senderId = Utils.getUidLoggedIn()
+
         // Send
         binding.sendBtn.setOnClickListener {
             viewModel.sendMessage(
-                Utils.getUidLoggedIn(),
+                senderId,
                 user.userid ?: return@setOnClickListener,
                 user.username ?: "",
                 user.imageUrl ?: ""

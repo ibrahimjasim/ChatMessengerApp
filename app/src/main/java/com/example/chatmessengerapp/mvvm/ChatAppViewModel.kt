@@ -12,7 +12,9 @@ import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.module.RecentChats
 import com.example.chatmessengerapp.module.Users
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,7 +37,6 @@ class ChatAppViewModel : ViewModel() {
 
     init {
         getCurrentUser()
-        // Don't call getRecentUsers() here unless UI observes it.
     }
 
     fun getUsers(): LiveData<List<Users>> = usersRepo.getUsers()
@@ -44,126 +45,126 @@ class ChatAppViewModel : ViewModel() {
         messageRepo.getMessages(friend)
 
     fun getRecentUsers(): LiveData<List<RecentChats>> =
-        recentChatRepo.getAllChatList() //
-    fun sendMessage(sender: String, receiver: String, friendname: String, friendimage: String) =
+        recentChatRepo.getAllChatList()
+
+    fun sendMessage(senderId: String, receiverId: String, friendname: String, friendimage: String) =
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-
             val context = MyApplication.instance.applicationContext
-
             val msg = message.value?.trim().orEmpty()
-            if (msg.isEmpty() || receiver.isBlank()) return@launch
+            if (msg.isBlank() || senderId.isBlank() || receiverId.isBlank()) {
+                Log.e("ChatAppViewModel", "Cannot send message with blank sender, receiver, or message.")
+                return@launch
+            }
 
-            val chatRoomId = listOf(sender, receiver).sorted().joinToString("")
+            val serverTimestamp = FieldValue.serverTimestamp()
 
-            val hashMap = hashMapOf<String, Any>(
-                "sender" to sender,
-                "receiver" to receiver,
+            val messageData = hashMapOf<String, Any>(
+                "sender" to senderId,
+                "receiver" to receiverId,
                 "message" to msg,
-                "time" to Utils.getTime()
+                "time" to serverTimestamp
             )
 
-            val friendnamesplit = friendname.split("\\s".toRegex())[0]
-            val mysharedPrefs = SharedPrefs(context)
-            mysharedPrefs.setValue("friendid", receiver)
-            mysharedPrefs.setValue("chatroomid", chatRoomId)
-            mysharedPrefs.setValue("friendname", friendnamesplit)
-            mysharedPrefs.setValue("friendimage", friendimage)
+            val myRecentChatData = hashMapOf<String, Any>(
+                "friendid" to receiverId,
+                "time" to serverTimestamp,
+                "sender" to senderId,
+                "message" to msg,
+                "friendsimage" to friendimage,
+                "name" to friendname,
+                "person" to "you"
+            )
+
+            val friendRecentChatData = hashMapOf<String, Any>(
+                "friendid" to senderId,
+                "time" to serverTimestamp,
+                "sender" to senderId,
+                "message" to msg,
+                "friendsimage" to (imageUrl.value.orEmpty()),
+                "name" to (name.value.orEmpty()),
+                "person" to (name.value.orEmpty())
+            )
+
+            val chatRoomId = listOf(senderId, receiverId).sorted().joinToString("")
 
             firestore.collection("Messages")
                 .document(chatRoomId)
                 .collection("chats")
-                .document(Utils.getTime())
-                .set(hashMap)
+                .add(messageData)
                 .addOnCompleteListener { taskmessage ->
-
-                    val setHashMap = hashMapOf<String, Any>(
-                        "friendid" to receiver,
-                        "time" to Utils.getTime(),
-                        "sender" to Utils.getUidLoggedIn(),
-                        "message" to msg,
-                        "friendsimage" to friendimage,
-                        "name" to friendname,
-                        "person" to "you"
-                    )
-
-                    firestore.collection("Conversation${Utils.getUidLoggedIn()}")
-                        .document(receiver)
-                        .set(setHashMap)
-
-                    firestore.collection("Conversation$receiver")
-                        .document(Utils.getUidLoggedIn())
-                        .set(
-                            hashMapOf(
-                                "friendid" to Utils.getUidLoggedIn(),
-                                "time" to Utils.getTime(),
-                                "sender" to receiver,
-                                "message" to msg,
-                                "friendsimage" to (imageUrl.value.orEmpty()),
-                                "name" to (name.value.orEmpty()),
-                                "person" to (name.value.orEmpty())
-                            )
-                        )
-
                     if (taskmessage.isSuccessful) {
+                        firestore.collection("Conversation$senderId")
+                            .document(receiverId)
+                            .set(myRecentChatData, SetOptions.merge())
+
+                        firestore.collection("Conversation$receiverId")
+                            .document(senderId)
+                            .set(friendRecentChatData, SetOptions.merge())
+
                         message.postValue("")
+                    } else {
+                        Log.e("ChatAppViewModel", "Failed to send message", taskmessage.exception)
                     }
                 }
         }
 
     fun getCurrentUser() = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-        val context = MyApplication.instance.applicationContext
+        val uid = Utils.getUidLoggedIn()
+        if (uid.isBlank()) {
+            Log.e("ChatAppViewModel", "Current user ID is blank in getCurrentUser.")
+            return@launch
+        }
 
         firestore.collection("Users")
-            .document(Utils.getUidLoggedIn())
-            .addSnapshotListener { value, _ ->
+            .document(uid)
+            .addSnapshotListener { value, error ->
+                if (error != null) {
+                    Log.w("ChatAppViewModel", "Listen failed.", error)
+                    return@addSnapshotListener
+                }
+
                 if (value != null && value.exists()) {
                     val user = value.toObject(Users::class.java)
-                    name.value = user?.username.orEmpty()
-                    imageUrl.value = user?.imageUrl.orEmpty()
-
-                    SharedPrefs(context).setValue("username", user?.username.orEmpty())
+                    name.postValue(user?.username.orEmpty())
+                    imageUrl.postValue(user?.imageUrl.orEmpty())
+                    SharedPrefs(MyApplication.instance.applicationContext).setValue("username", user?.username.orEmpty())
                 }
             }
     }
 
+    // --- THIS IS THE FINAL, CORRECTED FUNCTION ---
     fun updateProfile() = viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
-
         val context = MyApplication.instance.applicationContext
-
         val newName = name.value?.trim().orEmpty()
         val newImage = imageUrl.value?.trim().orEmpty()
 
-        if (newName.isEmpty() || newImage.isEmpty()) return@launch
+        if (newName.isEmpty() && newImage.isEmpty()) {
+            return@launch
+        }
 
-        val hashMapUser = hashMapOf<String, Any>(
+        val uid = Utils.getUidLoggedIn()
+        if (uid.isBlank()) {
+            Log.e("ChatAppViewModel", "Cannot update profile, user ID is blank.")
+            return@launch
+        }
+
+        val userUpdates = hashMapOf<String, Any>(
             "username" to newName,
             "imageUrl" to newImage
         )
 
+        // The ONLY job of this function is to update the Users collection.
         firestore.collection("Users")
-            .document(Utils.getUidLoggedIn())
-            .update(hashMapUser)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
+            .document(uid)
+            .update(userUpdates)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
                     Toast.makeText(context, "Updated", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Update failed.", Toast.LENGTH_SHORT).show()
+                    Log.e("ChatAppViewModel", "Profile update failed.", task.exception)
                 }
             }
-
-        val mysharedPrefs = SharedPrefs(context)
-        val friendid = mysharedPrefs.getValue("friendid") ?: return@launch
-
-        val hashMapUpdate = hashMapOf<String, Any>(
-            "friendsimage" to newImage,
-            "name" to newName,
-            "person" to newName
-        )
-
-        firestore.collection("Conversation$friendid")
-            .document(Utils.getUidLoggedIn())
-            .update(hashMapUpdate)
-
-        firestore.collection("Conversation${Utils.getUidLoggedIn()}")
-            .document(friendid)
-            .update("person", "you")
+        // I have REMOVED the old, buggy code that was writing to the "Conversation" collections.
     }
 }

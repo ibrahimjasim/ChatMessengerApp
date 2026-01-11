@@ -2,10 +2,13 @@ package com.example.chatmessengerapp.module
 
 import android.os.Parcel
 import android.os.Parcelable
+import com.google.firebase.firestore.ServerTimestamp
+import java.util.Date
+
 
 data class RecentChats(val friendid : String? ="",
                        val friendsimage: String? = "",
-                       val time : String? = "",
+                       @ServerTimestamp val time : Date? = null,
                        val name: String? ="",
                        val sender: String? = "",
                        val message : String? = "",
@@ -16,6 +19,7 @@ data class RecentChats(val friendid : String? ="",
     constructor(parcel: Parcel) : this(
         parcel.readString(),
         parcel.readString(),
+        parcel.readLong().let { if (it == -1L) null else Date(it) },
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -27,7 +31,7 @@ data class RecentChats(val friendid : String? ="",
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(friendid)
         parcel.writeString(friendsimage)
-        parcel.writeString(time)
+        parcel.writeLong(time?.time ?: -1L)
         parcel.writeString(name)
         parcel.writeString(sender)
         parcel.writeString(message)

@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <View
+        <ImageView
             android:id="@+id/onlineIndicator"
             android:layout_width="10dp"
             android:layout_height="10dp"

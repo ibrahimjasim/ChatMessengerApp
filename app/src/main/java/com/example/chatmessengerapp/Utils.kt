@@ -29,7 +29,7 @@ class Utils {
         const val CHANNEL_ID = "com.example.chatmessenger"
 
         fun getUidLoggedIn(): String {
-            return auth.currentUser?.uid.orEmpty()
+            return FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
         }
 
         fun getTime(): String {

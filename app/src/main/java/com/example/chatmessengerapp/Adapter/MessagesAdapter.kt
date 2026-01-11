@@ -8,6 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.module.Messages
+import java.text.SimpleDateFormat
+import java.util.Locale
+
 
 class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
 
@@ -37,9 +40,23 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
 
         holder.messageText.text = message.message ?: ""
 
+        val timeValue = message.time // This is of type Any?
 
-        val time = message.time.orEmpty()
-        holder.timeOfSent.text = if (time.length >= 5) time.take(5) else time
+        if (timeValue is com.google.firebase.Timestamp) {
+            // If it's a Firestore Timestamp, convert it to a Date
+            val date = timeValue.toDate()
+            val simpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+            holder.timeOfSent.text = simpleDateFormat.format(date)
+        } else if (timeValue is java.util.Date) {
+            // If it's already a Date, just format it
+            val simpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+            holder.timeOfSent.text = simpleDateFormat.format(timeValue)
+        } else if (timeValue is String) {
+            // As a fallback for old data, just display the first 5 chars
+            holder.timeOfSent.text = timeValue.take(5)
+        }
+
+        // --- END: NEW ROBUST TIME-HANDLING LOGIC ---
     }
 
     override fun getItemViewType(position: Int): Int {

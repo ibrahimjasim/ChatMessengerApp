@@ -41,7 +41,7 @@ object NotificationsHelper {
             context,
             chatRoomId.hashCode(),
             replyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         )
 
         val replyAction = NotificationCompat.Action.Builder(
