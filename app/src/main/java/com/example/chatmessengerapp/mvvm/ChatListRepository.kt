@@ -33,34 +33,15 @@ class ChatListRepository {
                     return@addSnapshotListener
                 }
 
-                val chatList = mutableListOf<RecentChats>()
-
-                for (document in snapshot.documents) {
+                val chatList = snapshot.documents.mapNotNull { document ->
                     try {
-                        // Manual deserialization to avoid crashing on old data
-                        val friendid = document.getString("friendid")
-                        val friendsimage = document.getString("friendsimage")
-                        val time = document.getTimestamp("time") // This will be null if it's a String
-                        val name = document.getString("name")
-                        val sender = document.getString("sender")
-                        val message = document.getString("message")
-                        val person = document.getString("person")
-                        val status = document.getString("status")
-
-                        // If time is null, it means we found old data. Skip it.
-                        if (time == null) {
-                            Log.w("ChatListRepository", "Skipping document with invalid time format: ${document.id}")
-                            continue
-                        }
-
-                        val recentModel = RecentChats(
-                            friendid, friendsimage, time, name, sender, message, person, status
-                        )
-                        chatList.add(recentModel)
-
+                        // Automatic deserialization. Firestore's toObject will use the default constructor
+                        // and map fields. This is safer against schema changes.
+                        document.toObject(RecentChats::class.java)
                     } catch (e: Exception) {
                         // This catch block will handle any other unexpected errors for a single document
                         Log.e("ChatListRepository", "Error converting document ${document.id}", e)
+                        null // Return null for items that fail to parse, mapNotNull will filter them out.
                     }
                 }
 
