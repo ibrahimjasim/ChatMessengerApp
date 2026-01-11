@@ -3,8 +3,10 @@ package com.example.chatmessengerapp.Adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.module.Messages
@@ -38,7 +40,18 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
     override fun onBindViewHolder(holder: MessageHolder, position: Int) {
         val message = listOfMessage[position]
 
-        holder.messageText.text = message.message ?: ""
+        // Handle Image vs Text
+        if (message.imageUrl != null && message.imageUrl.isNotBlank()) {
+            // Image message
+            holder.messageText.visibility = View.GONE
+            holder.image.visibility = View.VISIBLE
+            Glide.with(holder.itemView.context).load(message.imageUrl).into(holder.image)
+        } else {
+            // Text message
+            holder.image.visibility = View.GONE
+            holder.messageText.visibility = View.VISIBLE
+            holder.messageText.text = message.message ?: ""
+        }
 
         val timeValue = message.time // This is of type Any?
 
@@ -55,8 +68,6 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
             // As a fallback for old data, just display the first 5 chars
             holder.timeOfSent.text = timeValue.take(5)
         }
-
-        // --- END: NEW ROBUST TIME-HANDLING LOGIC ---
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -71,5 +82,6 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
     class MessageHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val messageText: TextView = itemView.findViewById(R.id.show_message)
         val timeOfSent: TextView = itemView.findViewById(R.id.timeView)
+        val image: ImageView = itemView.findViewById(R.id.message_image)
     }
 }
