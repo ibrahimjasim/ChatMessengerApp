@@ -2,21 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--Camera permission -->
-    <uses-permission android:name="android.permission.CAMERA" />
-
     <!-- Network for Firebase / Firestore / Retrofit -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Camera -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- Android 13+ notifications runtime permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Storage permission changes (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <!-- (Optional) If you still support < 33 and you truly need it, keep this.
          With minSdk 26 it's fine to include both; Android will ignore unknown ones.
