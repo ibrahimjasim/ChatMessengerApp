@@ -1,5 +1,7 @@
 package com.example.chatmessengerapp.fragments
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -31,7 +34,7 @@ class SettingsFragment : Fragment() {
     private lateinit var storage: FirebaseStorage
     private lateinit var storageRef: StorageReference
 
-    // ---------------- ACTIVITY RESULT LAUNCHERS ----------------
+    // --------- ACTIVITY RESULT LAUNCHERS ---------
 
     private val pickImageLauncher =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -40,16 +43,29 @@ class SettingsFragment : Fragment() {
                     requireContext().contentResolver,
                     it
                 )
-                uploadImageToFirebaseStorage(bitmap)
+                uploadImage(bitmap)
             }
         }
 
     private val takePhotoLauncher =
         registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
-            uploadImageToFirebaseStorage(bitmap)
+            uploadImage(bitmap)
         }
 
-    // -----------------------------------------------------------
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                takePhotoLauncher.launch(null)
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    "Camera permission is required",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+    // --------------------------------------------
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,78 +87,80 @@ class SettingsFragment : Fragment() {
         storage = FirebaseStorage.getInstance()
         storageRef = storage.reference
 
-        // Observe profile image
         viewModel.imageUrl.observe(viewLifecycleOwner) { url ->
             if (!url.isNullOrBlank()) {
-                loadImage(url)
+                Glide.with(requireContext())
+                    .load(url)
+                    .placeholder(R.drawable.person)
+                    .into(binding.settingUpdateImage)
             }
         }
 
-        // Back
         binding.settingBackBtn.setOnClickListener {
             findNavController().popBackStack()
         }
 
-        // Update profile info
         binding.settingUpdateButton.setOnClickListener {
             viewModel.updateProfile()
         }
 
-        // Change profile image
         binding.settingUpdateImage.setOnClickListener {
             showImagePickerDialog()
         }
     }
 
-    // ---------------- IMAGE PICKER DIALOG ----------------
+    // --------- IMAGE PICKER ---------
 
     private fun showImagePickerDialog() {
         val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Choose your profile picture")
+            .setTitle("Choose profile picture")
             .setItems(options) { dialog, which ->
                 when (options[which]) {
-                    "Take Photo" -> takePhotoWithCamera()
-                    "Choose from Gallery" -> pickImageFromGallery()
+                    "Take Photo" -> checkCameraPermissionAndOpen()
+                    "Choose from Gallery" -> pickImageLauncher.launch("image/*")
                     else -> dialog.dismiss()
                 }
             }
             .show()
     }
 
-    // ---------------- IMAGE ACTIONS ----------------
+    private fun checkCameraPermissionAndOpen() {
+        val permission = Manifest.permission.CAMERA
 
-    private fun pickImageFromGallery() {
-        pickImageLauncher.launch("image/*")
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                permission
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            takePhotoLauncher.launch(null)
+        } else {
+            cameraPermissionLauncher.launch(permission)
+        }
     }
 
-    private fun takePhotoWithCamera() {
-        takePhotoLauncher.launch(null)
-    }
+    // --------- FIREBASE UPLOAD ---------
 
-    // ---------------- FIREBASE STORAGE ----------------
+    private fun uploadImage(bitmap: Bitmap?) {
+        if (bitmap == null) return
 
-    private fun uploadImageToFirebaseStorage(imageBitmap: Bitmap?) {
-        if (imageBitmap == null) return
-
-        // Preview directly
-        binding.settingUpdateImage.setImageBitmap(imageBitmap)
+        binding.settingUpdateImage.setImageBitmap(bitmap)
 
         val baos = ByteArrayOutputStream()
-        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
-        val bytes = baos.toByteArray()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
+        val data = baos.toByteArray()
 
         val imageRef =
             storageRef.child("Photos/${UUID.randomUUID()}.jpg")
 
-        imageRef.putBytes(bytes)
+        imageRef.putBytes(data)
             .addOnSuccessListener {
                 imageRef.downloadUrl.addOnSuccessListener { uri ->
                     viewModel.imageUrl.value = uri.toString()
                     Toast.makeText(
                         requireContext(),
-                        "Image uploaded successfully!",
+                        "Image uploaded",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -150,19 +168,9 @@ class SettingsFragment : Fragment() {
             .addOnFailureListener {
                 Toast.makeText(
                     requireContext(),
-                    "Failed to upload image!",
+                    "Upload failed",
                     Toast.LENGTH_SHORT
                 ).show()
             }
-    }
-
-    // ---------------- IMAGE LOADING ----------------
-
-    private fun loadImage(imageUrl: String) {
-        Glide.with(requireContext())
-            .load(imageUrl)
-            .placeholder(R.drawable.person)
-            .dontAnimate()
-            .into(binding.settingUpdateImage)
     }
 }
