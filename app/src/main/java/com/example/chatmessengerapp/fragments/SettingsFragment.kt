@@ -1,8 +1,5 @@
 package com.example.chatmessengerapp.fragments
 
-import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -11,15 +8,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.R
-import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.databinding.FragmentSettingsBinding
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
 import com.google.firebase.storage.FirebaseStorage
@@ -29,18 +25,39 @@ import java.util.UUID
 
 class SettingsFragment : Fragment() {
 
-    private lateinit var viewModel: ChatAppViewModel
     private lateinit var binding: FragmentSettingsBinding
+    private lateinit var viewModel: ChatAppViewModel
 
-    private lateinit var storageRef: StorageReference
     private lateinit var storage: FirebaseStorage
-    private var uri: Uri? = null
+    private lateinit var storageRef: StorageReference
+
+    // ---------------- ACTIVITY RESULT LAUNCHERS ----------------
+
+    private val pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                val bitmap = MediaStore.Images.Media.getBitmap(
+                    requireContext().contentResolver,
+                    it
+                )
+                uploadImageToFirebaseStorage(bitmap)
+            }
+        }
+
+    private val takePhotoLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
+            uploadImageToFirebaseStorage(bitmap)
+        }
+
+    // -----------------------------------------------------------
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_settings, container, false)
+        binding =
+            DataBindingUtil.inflate(inflater, R.layout.fragment_settings, container, false)
         return binding.root
     }
 
@@ -48,41 +65,98 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
-        binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
+        binding.lifecycleOwner = viewLifecycleOwner
 
         storage = FirebaseStorage.getInstance()
         storageRef = storage.reference
 
-        // ✅ Observe once (remove onResume observer)
-        viewModel.imageUrl.observe(viewLifecycleOwner, Observer { url ->
-            if (!url.isNullOrBlank()) loadImage(url)
-        })
+        // Observe profile image
+        viewModel.imageUrl.observe(viewLifecycleOwner) { url ->
+            if (!url.isNullOrBlank()) {
+                loadImage(url)
+            }
+        }
 
+        // Back
         binding.settingBackBtn.setOnClickListener {
-            // ✅ safest back
             findNavController().popBackStack()
         }
 
+        // Update profile info
         binding.settingUpdateButton.setOnClickListener {
             viewModel.updateProfile()
         }
 
+        // Change profile image
         binding.settingUpdateImage.setOnClickListener {
-            val options = arrayOf<CharSequence>("Take Photo", "Choose from Gallery", "Cancel")
-
-            AlertDialog.Builder(requireContext())
-                .setTitle("Choose your profile picture")
-                .setItems(options) { dialog, item ->
-                    when (options[item]) {
-                        "Take Photo" -> takePhotoWithCamera()
-                        "Choose from Gallery" -> pickImageFromGallery()
-                        else -> dialog.dismiss()
-                    }
-                }
-                .show()
+            showImagePickerDialog()
         }
     }
+
+    // ---------------- IMAGE PICKER DIALOG ----------------
+
+    private fun showImagePickerDialog() {
+        val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Choose your profile picture")
+            .setItems(options) { dialog, which ->
+                when (options[which]) {
+                    "Take Photo" -> takePhotoWithCamera()
+                    "Choose from Gallery" -> pickImageFromGallery()
+                    else -> dialog.dismiss()
+                }
+            }
+            .show()
+    }
+
+    // ---------------- IMAGE ACTIONS ----------------
+
+    private fun pickImageFromGallery() {
+        pickImageLauncher.launch("image/*")
+    }
+
+    private fun takePhotoWithCamera() {
+        takePhotoLauncher.launch(null)
+    }
+
+    // ---------------- FIREBASE STORAGE ----------------
+
+    private fun uploadImageToFirebaseStorage(imageBitmap: Bitmap?) {
+        if (imageBitmap == null) return
+
+        // Preview directly
+        binding.settingUpdateImage.setImageBitmap(imageBitmap)
+
+        val baos = ByteArrayOutputStream()
+        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
+        val bytes = baos.toByteArray()
+
+        val imageRef =
+            storageRef.child("Photos/${UUID.randomUUID()}.jpg")
+
+        imageRef.putBytes(bytes)
+            .addOnSuccessListener {
+                imageRef.downloadUrl.addOnSuccessListener { uri ->
+                    viewModel.imageUrl.value = uri.toString()
+                    Toast.makeText(
+                        requireContext(),
+                        "Image uploaded successfully!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to upload image!",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+    }
+
+    // ---------------- IMAGE LOADING ----------------
 
     private fun loadImage(imageUrl: String) {
         Glide.with(requireContext())
@@ -90,67 +164,5 @@ class SettingsFragment : Fragment() {
             .placeholder(R.drawable.person)
             .dontAnimate()
             .into(binding.settingUpdateImage)
-    }
-
-    @SuppressLint("QueryPermissionsNeeded")
-    private fun pickImageFromGallery() {
-        val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        if (pickIntent.resolveActivity(requireActivity().packageManager) != null) {
-            startActivityForResult(pickIntent, Utils.REQUEST_IMAGE_PICK)
-        }
-    }
-
-    @SuppressLint("QueryPermissionsNeeded")
-    private fun takePhotoWithCamera() {
-        val takeIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        if (takeIntent.resolveActivity(requireActivity().packageManager) != null) {
-            startActivityForResult(takeIntent, Utils.REQUEST_IMAGE_CAPTURE)
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (resultCode != Activity.RESULT_OK) return
-
-        when (requestCode) {
-            Utils.REQUEST_IMAGE_CAPTURE -> {
-                val imageBitmap = data?.extras?.get("data") as? Bitmap
-                uploadImageToFirebaseStorage(imageBitmap)
-            }
-
-            Utils.REQUEST_IMAGE_PICK -> {
-                val imageUri = data?.data ?: return
-                val imageBitmap =
-                    MediaStore.Images.Media.getBitmap(requireContext().contentResolver, imageUri)
-                uploadImageToFirebaseStorage(imageBitmap)
-            }
-        }
-    }
-
-    private fun uploadImageToFirebaseStorage(imageBitmap: Bitmap?) {
-        if (imageBitmap == null) return
-
-        binding.settingUpdateImage.setImageBitmap(imageBitmap)
-
-        val baos = ByteArrayOutputStream()
-        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
-        val bytes = baos.toByteArray()
-
-        val storagePath = storageRef.child("Photos/${UUID.randomUUID()}.jpg")
-        storagePath.putBytes(bytes)
-            .addOnSuccessListener { taskSnapshot ->
-                taskSnapshot.metadata?.reference?.downloadUrl
-                    ?.addOnSuccessListener { downloadUri ->
-                        uri = downloadUri
-                        viewModel.imageUrl.value = downloadUri.toString()
-                        Toast.makeText(context, "Image uploaded successfully!", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-            }
-            .addOnFailureListener {
-                Toast.makeText(context, "Failed to upload image!", Toast.LENGTH_SHORT).show()
-            }
     }
 }
