@@ -1,12 +1,21 @@
 package com.example.chatmessengerapp.fragments
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -28,6 +37,25 @@ class ChatFragment : Fragment() {
     private lateinit var binding: FragmentChatBinding
     private lateinit var viewModel: ChatAppViewModel
     private lateinit var adapter: MessageAdapter
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, it)
+            sendImage(bitmap)
+        }
+    }
+
+    private val takePhotoLauncher = registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
+        sendImage(bitmap)
+    }
+
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            takePhotoLauncher.launch(null)
+        } else {
+            Toast.makeText(requireContext(), "Camera permission is required", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -53,7 +81,6 @@ class ChatFragment : Fragment() {
         val imageView = toolbar.findViewById<CircleImageView>(R.id.chatImageViewUser)
         val tvUserName = toolbar.findViewById<TextView>(R.id.chatUserName)
         val backBtn = toolbar.findViewById<ImageView>(R.id.chatBackBtn)
-
 
         val tvStatus = view.findViewById<TextView>(R.id.chatUserStatus)
 
@@ -88,13 +115,52 @@ class ChatFragment : Fragment() {
                 user.imageUrl ?: ""
             )
         }
+        
+        binding.attachBtn.setOnClickListener {
+            showImageSourceDialog()
+        }
 
         viewModel.getMessages(friendId).observe(viewLifecycleOwner) { list: List<Messages> ->
             adapter.setList(list)
         }
     }
 
-    // ---------------- REALTIME DATABASE STATUS ----------------
+    private fun showImageSourceDialog() {
+        val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Send Image")
+            .setItems(options) { dialog, which ->
+                when (options[which]) {
+                    "Take Photo" -> checkCameraPermissionAndOpen()
+                    "Choose from Gallery" -> pickImageLauncher.launch("image/*")
+                    else -> dialog.dismiss()
+                }
+            }
+            .show()
+    }
+
+    private fun checkCameraPermissionAndOpen() {
+        val permission = Manifest.permission.CAMERA
+        if (ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED) {
+            takePhotoLauncher.launch(null)
+        } else {
+            cameraPermissionLauncher.launch(permission)
+        }
+    }
+
+    private fun sendImage(bitmap: Bitmap?) {
+        if (bitmap == null) return
+
+        viewModel.sendImage(
+            Utils.getUidLoggedIn(),
+            args.users.userid!!,
+            args.users.username!!,
+            args.users.imageUrl!!,
+            bitmap
+        )
+        Toast.makeText(requireContext(), "Sending image...", Toast.LENGTH_SHORT).show()
+    }
 
     private fun observeUserStatus(
         userId: String,
