@@ -5,7 +5,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.module.Messages
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 
@@ -37,26 +36,14 @@ class MessageRepository {
                     return@addSnapshotListener
                 }
 
-                val messageList = mutableListOf<Messages>()
-                for (doc in snapshot.documents) {
+                val messageList = snapshot.documents.mapNotNull { doc ->
                     try {
-                        // Manual and safe deserialization to protect against old data format
-                        val sender = doc.getString("sender")
-                        val receiver = doc.getString("receiver")
-                        val messageText = doc.getString("message")
-                        val imageUrl = doc.getString("imageUrl")
-                        val time = doc.getTimestamp("time") // Safely get Timestamp
-
-                        // If time is null, it's old data with a String format. Skip it.
-                        if (time == null) {
-                            Log.w("MessageRepository", "Skipping message with invalid time format: ${doc.id}")
-                            continue
-                        }
-
-                        messageList.add(Messages(sender, receiver, messageText, time, imageUrl))
-
+                        // Automatic and safe deserialization. This handles Timestamp to Date conversion
+                        // and protects against missing fields.
+                        doc.toObject(Messages::class.java)
                     } catch (e: Exception) {
                         Log.e("MessageRepository", "Error converting message document ${doc.id}", e)
+                        null // Filter out any documents that fail to parse
                     }
                 }
                 messagesLiveData.postValue(messageList)
