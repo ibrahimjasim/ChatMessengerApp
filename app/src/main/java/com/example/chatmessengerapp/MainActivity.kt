@@ -1,107 +1,107 @@
 package com.example.chatmessengerapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import com.example.chatmessengerapp.activities.SignInActivity
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase // IMPORTANT
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var navController: NavController
-
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
-
-    private var token: String = ""
-
-    companion object {
-        private const val REQ_POST_NOTIFICATIONS = 1001
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        auth = FirebaseAuth.getInstance()
+        firestore = FirebaseFirestore.getInstance()
+
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
 
-        auth = FirebaseAuth.getInstance()
-        firestore = FirebaseFirestore.getInstance()
-
         requestNotificationPermissionIfNeeded()
-
-        generateToken()
-    }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-
-        val granted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (!granted) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                REQ_POST_NOTIFICATIONS
-            )
-        }
-    }
-
-    private fun generateToken() {
-        // Only generate/save token if user is logged in
-        val uid = Utils.getUidLoggedIn()
-        if (uid.isBlank()) return
-
-        FirebaseInstallations.getInstance().id
-            .addOnSuccessListener {
-                FirebaseMessaging.getInstance().token
-                    .addOnSuccessListener { getToken ->
-                        token = getToken
-
-                        val map = hashMapOf<String, Any>("token" to token)
-                        firestore.collection("Tokens").document(uid).set(map)
-                    }
-            }
     }
 
     override fun onStart() {
         super.onStart()
-        setUserStatus("Online")
+        if (auth.currentUser == null) {
+            goToSignInActivity()
+            return
+        }
+        // Set up the reliable presence system
+        setupPresenceSystem()
     }
 
-    override fun onResume() {
-        super.onResume()
-        setUserStatus("Online")
+    override fun onStop() {
+        super.onStop()
+        // When the app goes into the background gracefully, tell the Realtime Database we are offline.
+        // This makes the status change faster.
+        val uid = Utils.getUidLoggedIn()
+        if (uid.isNotBlank()) {
+            FirebaseDatabase.getInstance().getReference("/status/$uid").setValue("Offline")
+        }
     }
 
-    override fun onPause() {
-        super.onPause()
-        setUserStatus("Offline")
-    }
-
-    private fun setUserStatus(status: String) {
+    private fun setupPresenceSystem() {
         val uid = Utils.getUidLoggedIn()
         if (uid.isBlank()) return
 
-        firestore.collection("Users").document(uid).update("status", status)
+        // 1. Create a reference to the Realtime Database for this user's status.
+        val userStatusRtdbRef = FirebaseDatabase.getInstance().getReference("/status/$uid")
+        // 2. Create a reference to the user's document in Firestore.
+        val userStatusFirestoreRef = firestore.collection("Users").document(uid)
+
+        // 3. Listen for the Realtime Database's connection state.
+        val connectedRef = FirebaseDatabase.getInstance().getReference(".info/connected")
+        connectedRef.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
+            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                val connected = snapshot.getValue(Boolean::class.java) ?: false
+                if (connected) {
+                    // We are connected. Set our RTDB status to "Online".
+                    userStatusRtdbRef.setValue("Online")
+                    // This is the "last will": if we disconnect unexpectedly, the server will set our status to "Offline".
+                    userStatusRtdbRef.onDisconnect().setValue("Offline")
+                }
+            }
+            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
+                Log.w("MainActivity", "RTDB connection listener was cancelled", error.toException())
+            }
+        })
+
+
+    }
+
+    private fun goToSignInActivity() {
+        val intent = Intent(this, SignInActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
+            }
+        }
     }
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // If we are on Home fragment, exit app, else normal back
         if (navController.currentDestination?.id == R.id.homeFragment) {
             moveTaskToBack(true)
         } else {

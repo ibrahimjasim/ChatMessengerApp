@@ -1,12 +1,9 @@
 package com.example.chatmessengerapp.fragments
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.LayoutInflater
@@ -18,7 +15,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
@@ -32,53 +28,52 @@ import java.util.UUID
 
 class SettingsFragment : Fragment() {
 
-    private lateinit var viewModel: ChatAppViewModel
     private lateinit var binding: FragmentSettingsBinding
+    private lateinit var viewModel: ChatAppViewModel
 
-    private lateinit var storageRef: StorageReference
     private lateinit var storage: FirebaseStorage
+    private lateinit var storageRef: StorageReference
 
-    // Modern way to handle activity results for picking an image
-    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { imageUri ->
-                val imageBitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, imageUri)
-                uploadImageToFirebaseStorage(imageBitmap)
+    // --------- ACTIVITY RESULT LAUNCHERS ---------
+
+    private val pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                val bitmap = MediaStore.Images.Media.getBitmap(
+                    requireContext().contentResolver,
+                    it
+                )
+                uploadImage(bitmap)
             }
         }
-    }
 
-    // Modern way to handle activity results for taking a photo
-    private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val imageBitmap = result.data?.extras?.get("data") as? Bitmap
-            uploadImageToFirebaseStorage(imageBitmap)
+    private val takePhotoLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
+            uploadImage(bitmap)
         }
-    }
 
-    // Modern way to request gallery permission
-    private val galleryPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            pickImageFromGallery()
-        } else {
-            Toast.makeText(requireContext(), "Permission denied to access gallery", Toast.LENGTH_SHORT).show()
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                takePhotoLauncher.launch(null)
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    "Camera permission is required",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
-    }
 
-    // Modern way to request camera permission
-    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            takePhotoWithCamera()
-        } else {
-            Toast.makeText(requireContext(), "Permission denied to use camera", Toast.LENGTH_SHORT).show()
-        }
-    }
+    // --------------------------------------------
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_settings, container, false)
+        binding =
+            DataBindingUtil.inflate(inflater, R.layout.fragment_settings, container, false)
         return binding.root
     }
 
@@ -86,15 +81,20 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
-        binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
+        binding.lifecycleOwner = viewLifecycleOwner
 
         storage = FirebaseStorage.getInstance()
         storageRef = storage.reference
 
-        viewModel.imageUrl.observe(viewLifecycleOwner, Observer { url ->
-            if (!url.isNullOrBlank()) loadImage(url)
-        })
+        viewModel.imageUrl.observe(viewLifecycleOwner) { url ->
+            if (!url.isNullOrBlank()) {
+                Glide.with(requireContext())
+                    .load(url)
+                    .placeholder(R.drawable.person)
+                    .into(binding.settingUpdateImage)
+            }
+        }
 
         binding.settingBackBtn.setOnClickListener {
             findNavController().popBackStack()
@@ -105,84 +105,72 @@ class SettingsFragment : Fragment() {
         }
 
         binding.settingUpdateImage.setOnClickListener {
-            showPictureDialog()
+            showImagePickerDialog()
         }
     }
 
-    private fun showPictureDialog() {
-        val options = arrayOf<CharSequence>("Take Photo", "Choose from Gallery", "Cancel")
+    // --------- IMAGE PICKER ---------
+
+    private fun showImagePickerDialog() {
+        val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
+
         AlertDialog.Builder(requireContext())
-            .setTitle("Choose your profile picture")
-            .setItems(options) { dialog, item ->
-                when (options[item]) {
-                    "Take Photo" -> checkCameraPermissionAndTakePhoto()
-                    "Choose from Gallery" -> checkGalleryPermissionAndPickImage()
+            .setTitle("Choose profile picture")
+            .setItems(options) { dialog, which ->
+                when (options[which]) {
+                    "Take Photo" -> checkCameraPermissionAndOpen()
+                    "Choose from Gallery" -> pickImageLauncher.launch("image/*")
                     else -> dialog.dismiss()
                 }
             }
             .show()
     }
 
-    private fun checkGalleryPermissionAndPickImage() {
-        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_IMAGES
-        } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
-        }
+    private fun checkCameraPermissionAndOpen() {
+        val permission = Manifest.permission.CAMERA
 
-        if (ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED) {
-            pickImageFromGallery()
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                permission
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            takePhotoLauncher.launch(null)
         } else {
-            galleryPermissionLauncher.launch(permission)
-        }
-    }
-
-    private fun checkCameraPermissionAndTakePhoto() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            takePhotoWithCamera()
-        } else {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            cameraPermissionLauncher.launch(permission)
         }
     }
 
-    private fun pickImageFromGallery() {
-        val pickIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        pickImageLauncher.launch(pickIntent)
-    }
+    // --------- FIREBASE UPLOAD ---------
 
-    private fun takePhotoWithCamera() {
-        val takeIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        takePictureLauncher.launch(takeIntent)
-    }
+    private fun uploadImage(bitmap: Bitmap?) {
+        if (bitmap == null) return
 
-    private fun uploadImageToFirebaseStorage(imageBitmap: Bitmap?) {
-        if (imageBitmap == null) return
-
-        // Show the selected image immediately
-        binding.settingUpdateImage.setImageBitmap(imageBitmap)
+        binding.settingUpdateImage.setImageBitmap(bitmap)
 
         val baos = ByteArrayOutputStream()
-        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
-        val bytes = baos.toByteArray()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
+        val data = baos.toByteArray()
 
-        val storagePath = storageRef.child("Photos/${UUID.randomUUID()}.jpg")
-        storagePath.putBytes(bytes)
-            .addOnSuccessListener { taskSnapshot ->
-                taskSnapshot.metadata?.reference?.downloadUrl?.addOnSuccessListener { downloadUri ->
-                    viewModel.imageUrl.value = downloadUri.toString()
-                    Toast.makeText(context, "Image uploaded. Press Update to save.", Toast.LENGTH_SHORT).show()
+        val imageRef =
+            storageRef.child("Photos/${UUID.randomUUID()}.jpg")
+
+        imageRef.putBytes(data)
+            .addOnSuccessListener {
+                imageRef.downloadUrl.addOnSuccessListener { uri ->
+                    viewModel.imageUrl.value = uri.toString()
+                    Toast.makeText(
+                        requireContext(),
+                        "Image uploaded",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
             .addOnFailureListener {
-                Toast.makeText(context, "Failed to upload image!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Upload failed",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
-    }
-
-    private fun loadImage(imageUrl: String) {
-        Glide.with(requireContext())
-            .load(imageUrl)
-            .placeholder(R.drawable.person)
-            .dontAnimate()
-            .into(binding.settingUpdateImage)
     }
 }

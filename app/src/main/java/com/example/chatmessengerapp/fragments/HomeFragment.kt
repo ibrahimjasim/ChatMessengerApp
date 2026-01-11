@@ -2,6 +2,7 @@ package com.example.chatmessengerapp.fragments
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -57,41 +58,39 @@ class HomeFragment : Fragment(), OnItemClickListener {
         return binding.root
     }
 
+    // In HomeFragment.kt
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
         binding.lifecycleOwner = viewLifecycleOwner
 
-        // Toolbar
+        // Toolbar setup
         toolbar = view.findViewById(R.id.toolbarMain)
         val logoutImage = toolbar.findViewById<ImageView>(R.id.logOut)
         circleImageView = toolbar.findViewById(R.id.tlImage)
-
-        // Profile image
-        viewModel.imageUrl.observe(viewLifecycleOwner, Observer { url ->
+        viewModel.imageUrl.observe(viewLifecycleOwner) { url ->
             if (!url.isNullOrBlank()) {
                 Glide.with(requireContext()).load(url).into(circleImageView)
             }
-        })
-
-        // Logout
-        val firebaseAuth = FirebaseAuth.getInstance()
+        }
         logoutImage.setOnClickListener {
-            firebaseAuth.signOut()
+            FirebaseAuth.getInstance().signOut()
             startActivity(Intent(requireContext(), SignInActivity::class.java))
             requireActivity().finish()
         }
+        circleImageView.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_settingsFragment)
+        }
 
-        // RecyclerViews
+        // RecyclerViews setup
         rvUsers = view.findViewById(R.id.rvUsers)
         rvRecentChats = view.findViewById(R.id.rvRecentChats)
 
         adapter = UserAdapter()
         recentAdapter = RecentChatAdapter()
 
-        rvUsers.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        rvUsers.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         rvRecentChats.layoutManager = LinearLayoutManager(requireContext())
 
         rvUsers.adapter = adapter
@@ -103,21 +102,19 @@ class HomeFragment : Fragment(), OnItemClickListener {
             findNavController().navigate(action)
         }
 
-        // Load users
-        viewModel.getUsers().observe(viewLifecycleOwner, Observer { users ->
+        // --- THIS IS THE KEY PART ---
+        // Observe the live list of all users from the ViewModel.
+        viewModel.getUsers().observe(viewLifecycleOwner) { users ->
+            // Pass the live list to BOTH adapters.
             adapter.setList(users)
-        })
 
-        // Load recent chats
-        viewModel.getRecentUsers().observe(viewLifecycleOwner, Observer { chats ->
+        }
+
+        viewModel.getRecentUsers().observe(viewLifecycleOwner) { chats ->
             recentAdapter.setList(chats)
-        })
-
-        // Go to settings
-        circleImageView.setOnClickListener {
-            findNavController().navigate(R.id.action_homeFragment_to_settingsFragment)
         }
     }
+
 
     /**
      * Phase 1 notifications:
@@ -133,52 +130,90 @@ class HomeFragment : Fragment(), OnItemClickListener {
         stopConversationNotificationListener()
     }
 
+    // In HomeFragment.kt, replace the entire function
+
     private fun startConversationNotificationListener() {
-        if (convoListener != null) return // already listening
+        if (convoListener != null) {
+            return // Already listening
+        }
 
         val myId = Utils.getUidLoggedIn()
-        if (myId.isBlank()) return
+        if (myId.isBlank()) {
+            return
+        }
 
+        // --- START OF THE CORRECT AND SAFE FIX ---
+        // This query listens to all subcollections named "chats" for new messages.
         convoListener = FirebaseFirestore.getInstance()
-            .collection("Conversation$myId")
+            .collectionGroup("Messages")
             .orderBy("time", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, _ ->
-                if (snapshot == null) return@addSnapshotListener
-
-                // Only react to latest doc change
-                val change = snapshot.documentChanges.firstOrNull() ?: return@addSnapshotListener
-                val doc = change.document
-
-                val sender = doc.getString("sender").orEmpty()
-                val friendId = doc.getString("friendid").orEmpty()
-                val msg = doc.getString("message").orEmpty()
-                val name = doc.getString("name").orEmpty()
-                val image = doc.getString("friendsimage").orEmpty()
-
-                // Prevent notifying for my own messages
-                if (sender == myId) return@addSnapshotListener
-
-                // Prevent duplicate notification for same message/time
-                val time = doc.getTimestamp("time")
-                if (time == null) { // This might happen with very old data, skip it.
+            .limit(1)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    // This error will appear in the log if the required index is missing.
+                    Log.w("HomeFragment", "CollectionGroup listen failed.", error)
                     return@addSnapshotListener
                 }
-                val messageId = doc.id + "_" + time.seconds
-                if (messageId == lastNotifiedMessageId) return@addSnapshotListener
-                lastNotifiedMessageId = messageId
 
-                val chatRoomId = listOf(myId, friendId).sorted().joinToString("")
+                if (snapshot == null || snapshot.isEmpty) {
+                    return@addSnapshotListener
+                }
 
-                NotificationsHelper.showMessageNotification(
-                    context = requireContext(),
-                    chatRoomId = chatRoomId,
-                    senderId = friendId,
-                    senderName = name,
-                    senderImage = image,
-                    messageText = msg
-                )
+                val docChange = snapshot.documentChanges.firstOrNull()
+                // We only care about brand new messages for notifications.
+                if (docChange?.type != com.google.firebase.firestore.DocumentChange.Type.ADDED) {
+                    return@addSnapshotListener
+                }
+
+                val doc = docChange.document
+
+                // Now, get the data from the message document itself
+                val senderId = doc.getString("sender").orEmpty()
+                val receiverId = doc.getString("receiver").orEmpty()
+                val msg = doc.getString("message").orEmpty()
+
+                // IMPORTANT: Only show a notification if the message is FOR ME, and not FROM ME.
+                if (receiverId != myId || senderId == myId) {
+                    return@addSnapshotListener
+                }
+
+                // We need the sender's name and image for the notification.
+                // We fetch this from the "Users" collection.
+                FirebaseFirestore.getInstance().collection("Users").document(senderId).get()
+                    .addOnSuccessListener { userSnapshot ->
+                        if (!userSnapshot.exists()) {
+                            return@addOnSuccessListener
+                        }
+
+                        val senderName = userSnapshot.getString("username").orEmpty()
+                        val senderImage = userSnapshot.getString("imageUrl").orEmpty()
+
+                        // Use the document ID and timestamp to prevent showing the same notification twice
+                        val time = doc.getTimestamp("time")
+                        val messageId = doc.id + "_" + (time?.seconds ?: 0L)
+                        if (messageId == lastNotifiedMessageId) {
+                            return@addOnSuccessListener
+                        }
+                        lastNotifiedMessageId = messageId
+
+                        // Create the chat room ID just like everywhere else to open the correct chat
+                        val chatRoomId = listOf(myId, senderId).sorted().joinToString("")
+
+                        // We have everything we need. Show the notification.
+                        NotificationsHelper.showMessageNotification(
+                            context = requireContext(),
+                            chatRoomId = chatRoomId,
+                            senderId = senderId,
+                            senderName = senderName,
+                            senderImage = senderImage,
+                            messageText = msg
+                        )
+                    }
             }
+        // --- END OF THE CORRECT AND SAFE FIX ---
     }
+
+
 
     private fun stopConversationNotificationListener() {
         convoListener?.remove()

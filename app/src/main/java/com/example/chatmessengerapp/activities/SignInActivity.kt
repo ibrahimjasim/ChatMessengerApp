@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.chatmessengerapp.activities
 
 import android.app.ProgressDialog
@@ -12,12 +14,23 @@ import com.example.chatmessengerapp.databinding.ActivitySignInBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 
+@Suppress("DEPRECATION")
 class SignInActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var progressDialogSignIn: ProgressDialog
     private lateinit var signInBinding: ActivitySignInBinding
 
+    // --- FIX 1: CHECK FOR LOGGED-IN USER IN onStart ---
+    override fun onStart() {
+        super.onStart()
+        // If the user is already logged in, go straight to MainActivity
+        if (auth.currentUser != null) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish() // Finish SignInActivity so you can't go back to it
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,23 +39,14 @@ class SignInActivity : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
 
-        // IF user has logged in
-        // user has to log in only once
-        // if (auth.currentUser != null) {
-        //  startActivity(Intent(this, MainActivity::class.java))
-        //  finish()
-        // }
-
         progressDialogSignIn = ProgressDialog(this)
         progressDialogSignIn.setMessage("Signing In")
-
 
         signInBinding.signInTextToSignUp.setOnClickListener {
             startActivity(Intent(this, SignUpActivity::class.java))
         }
 
         signInBinding.loginButton.setOnClickListener {
-
             val email = signInBinding.loginetemail.text.toString().trim()
             val password = signInBinding.loginetpassword.text.toString().trim()
 
@@ -73,6 +77,7 @@ class SignInActivity : AppCompatActivity() {
 
                 if (task.isSuccessful) {
                     val intent = Intent(this, MainActivity::class.java)
+                    // These flags are good, they prevent going back to the login screen
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
                     finish()
@@ -101,7 +106,6 @@ class SignInActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Dismiss dialog to prevent window leaks
         if (progressDialogSignIn.isShowing) {
             progressDialogSignIn.dismiss()
         }

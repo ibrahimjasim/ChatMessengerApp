@@ -1,16 +1,10 @@
 package com.example.chatmessengerapp.fragments
 
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
@@ -25,22 +19,16 @@ import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.databinding.FragmentChatfromHomeBinding
 import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
+import com.google.firebase.database.*
 import de.hdodenhof.circleimageview.CircleImageView
 
 class ChatFromHomeFragment : Fragment() {
 
     private val args: ChatFromHomeFragmentArgs by navArgs()
+
     private lateinit var binding: FragmentChatfromHomeBinding
     private lateinit var viewModel: ChatAppViewModel
     private lateinit var adapter: MessageAdapter
-
-    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { imageUri ->
-                sendImage(imageUri)
-            }
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -56,91 +44,80 @@ class ChatFromHomeFragment : Fragment() {
 
         val recent = args.recentchats
 
-        // Critical check: If friend's ID is missing, we cannot proceed.
-        val friendId = recent.friendid
-        if (friendId.isNullOrBlank()) {
-            Toast.makeText(requireContext(), "Error: Could not open chat. User ID is missing.", Toast.LENGTH_SHORT).show()
-            findNavController().popBackStack()
-            return
-        }
-
         viewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
         binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
 
-        // Toolbar setup
+        // Toolbar
         val toolbar = view.findViewById<Toolbar>(R.id.toolBarChat)
-        val circleImageView = toolbar.findViewById<CircleImageView>(R.id.chatImageViewUser)
-        val textViewName = toolbar.findViewById<TextView>(R.id.chatUserName)
+        val imageView = toolbar.findViewById<CircleImageView>(R.id.chatImageViewUser)
+        val tvUserName = toolbar.findViewById<TextView>(R.id.chatUserName)
+
+        // Status TextView
+        val tvStatus = view.findViewById<TextView>(R.id.chatUserStatus)
 
         Glide.with(requireContext())
             .load(recent.friendsimage)
             .placeholder(R.drawable.person)
-            .dontAnimate()
-            .into(circleImageView)
+            .into(imageView)
 
-        textViewName.text = recent.name ?: ""
+        tvUserName.text = recent.name ?: ""
 
-        // Back Button
+        // REALTIME STATUS
+        val friendId = recent.friendid ?: return
+        observeUserStatus(friendId, tvStatus)
+
+        // Back
         binding.chatBackBtn.setOnClickListener {
             findNavController().popBackStack()
         }
 
-        // Send Text Button
+        // Send
         binding.sendBtn.setOnClickListener {
-            val messageText = binding.editTextMessage.text.toString().trim()
-            if (messageText.isNotEmpty()) {
-                viewModel.sendTextMessage(
-                    Utils.getUidLoggedIn(),
-                    friendId, // Safe to use friendId here
-                    recent.name ?: "",
-                    recent.friendsimage ?: "",
-                    messageText
-                )
-            }
+            viewModel.sendMessage(
+                Utils.getUidLoggedIn(),
+                friendId,
+                recent.name ?: "",
+                recent.friendsimage ?: ""
+            )
         }
 
-        // Attach Image Button
-        binding.attachBtn.setOnClickListener {
-            openGallery()
-        }
-
-        // Messages RecyclerView
-        adapter = MessageAdapter()
-        binding.messagesRecyclerView.layoutManager = LinearLayoutManager(requireContext()).apply {
-            stackFromEnd = true
-        }
-        binding.messagesRecyclerView.adapter = adapter
-
-        // Observe messages
+        // Messages
         viewModel.getMessages(friendId).observe(viewLifecycleOwner) { list ->
-            adapter.setList(list)
-            if (list.isNotEmpty()) {
-                binding.messagesRecyclerView.scrollToPosition(list.size - 1)
+            initRecyclerView(list)
+        }
+    }
+
+    private fun initRecyclerView(list: List<Messages>) {
+        if (!::adapter.isInitialized) {
+            adapter = MessageAdapter()
+            binding.messagesRecyclerView.layoutManager =
+                LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
+            binding.messagesRecyclerView.adapter = adapter
+        }
+        adapter.setList(list)
+    }
+
+    // ---------------- REALTIME DATABASE STATUS ----------------
+
+    private fun observeUserStatus(
+        userId: String,
+        statusTextView: TextView
+    ) {
+        val statusRef = FirebaseDatabase.getInstance()
+            .getReference("status")
+            .child(userId)
+
+        statusRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val status = snapshot.getValue(String::class.java)
+                statusTextView.text =
+                    if (status == "Online") "Online" else "Offline"
             }
-        }
-    }
 
-    private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        pickImageLauncher.launch(intent)
-    }
-
-    private fun sendImage(imageUri: Uri) {
-        val recent = args.recentchats
-        val friendId = recent.friendid
-        if (friendId.isNullOrBlank()) {
-            Toast.makeText(requireContext(), "Error: Cannot send image. User ID is missing.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        viewModel.sendImageMessage(
-            Utils.getUidLoggedIn(),
-            friendId,
-            recent.name ?: "",
-            recent.friendsimage ?: "",
-            imageUri
-        )
-        Toast.makeText(requireContext(), "Sending image...", Toast.LENGTH_SHORT).show()
+            override fun onCancelled(error: DatabaseError) {
+                statusTextView.text = "Offline"
+            }
+        })
     }
 }

@@ -3,13 +3,14 @@ package com.example.chatmessengerapp.Adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.chatmessengerapp.R
 import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.module.Messages
+import java.text.SimpleDateFormat
+import java.util.Locale
+
 
 class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
 
@@ -37,23 +38,25 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
     override fun onBindViewHolder(holder: MessageHolder, position: Int) {
         val message = listOfMessage[position]
 
-        // Check if the message is an image or text
-        if (message.imageUrl != null) {
-            // It's an image message
-            holder.messageText.visibility = View.GONE
-            holder.messageImage.visibility = View.VISIBLE
-            Glide.with(holder.itemView.context)
-                .load(message.imageUrl)
-                .placeholder(R.drawable.person) // Optional: show a placeholder while loading
-                .into(holder.messageImage)
-        } else {
-            // It's a text message
-            holder.messageImage.visibility = View.GONE
-            holder.messageText.visibility = View.VISIBLE
-            holder.messageText.text = message.message ?: ""
+        holder.messageText.text = message.message ?: ""
+
+        val timeValue = message.time // This is of type Any?
+
+        if (timeValue is com.google.firebase.Timestamp) {
+            // If it's a Firestore Timestamp, convert it to a Date
+            val date = timeValue.toDate()
+            val simpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+            holder.timeOfSent.text = simpleDateFormat.format(date)
+        } else if (timeValue is java.util.Date) {
+            // If it's already a Date, just format it
+            val simpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+            holder.timeOfSent.text = simpleDateFormat.format(timeValue)
+        } else if (timeValue is String) {
+            // As a fallback for old data, just display the first 5 chars
+            holder.timeOfSent.text = timeValue.take(5)
         }
 
-        holder.timeOfSent.text = Utils.formatTime(message.time)
+        // --- END: NEW ROBUST TIME-HANDLING LOGIC ---
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -68,6 +71,5 @@ class MessageAdapter : RecyclerView.Adapter<MessageAdapter.MessageHolder>() {
     class MessageHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val messageText: TextView = itemView.findViewById(R.id.show_message)
         val timeOfSent: TextView = itemView.findViewById(R.id.timeView)
-        val messageImage: ImageView = itemView.findViewById(R.id.message_image) // New ImageView
     }
 }

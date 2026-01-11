@@ -65,6 +65,10 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
 
+    //Database
+    implementation("com.google.firebase:firebase-database-ktx")
+
+
     // ✅ Only keep this if you keep FirebaseService (FCM)
     implementation("com.google.firebase:firebase-messaging-ktx")
 
