@@ -83,17 +83,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // 4. Listen for changes in our Realtime Database status...
-        userStatusRtdbRef.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
-            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
-                // ...and copy the updated status ("Online" or "Offline") to FIRESTORE.
-                val status = snapshot.getValue(String::class.java) ?: "Offline"
-                userStatusFirestoreRef.update("status", status)
-            }
-            override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
-                Log.w("MainActivity", "RTDB status listener was cancelled", error.toException())
-            }
-        })
+
     }
 
     private fun goToSignInActivity() {

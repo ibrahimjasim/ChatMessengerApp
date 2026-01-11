@@ -19,6 +19,7 @@ import com.example.chatmessengerapp.Utils
 import com.example.chatmessengerapp.databinding.FragmentChatBinding
 import com.example.chatmessengerapp.module.Messages
 import com.example.chatmessengerapp.mvvm.ChatAppViewModel
+import com.google.firebase.database.*
 import de.hdodenhof.circleimageview.CircleImageView
 
 class ChatFragment : Fragment() {
@@ -29,7 +30,8 @@ class ChatFragment : Fragment() {
     private lateinit var adapter: MessageAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_chat, container, false)
@@ -40,20 +42,19 @@ class ChatFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         args = ChatFragmentArgs.fromBundle(requireArguments())
+        val user = args.users
 
         viewModel = ViewModelProvider(this)[ChatAppViewModel::class.java]
         binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
 
-        val user = args.users
-
-        // Toolbar views
+        // Toolbar
         val toolbar = view.findViewById<Toolbar>(R.id.toolBarChat)
-        val circleImageView = toolbar.findViewById<CircleImageView>(R.id.chatImageViewUser)
+        val imageView = toolbar.findViewById<CircleImageView>(R.id.chatImageViewUser)
         val tvUserName = toolbar.findViewById<TextView>(R.id.chatUserName)
         val backBtn = toolbar.findViewById<ImageView>(R.id.chatBackBtn)
 
-        // Status is OUTSIDE toolbar in your XML
+
         val tvStatus = view.findViewById<TextView>(R.id.chatUserStatus)
 
         backBtn.setOnClickListener {
@@ -63,34 +64,56 @@ class ChatFragment : Fragment() {
         Glide.with(requireContext())
             .load(user.imageUrl)
             .placeholder(R.drawable.person)
-            .into(circleImageView)
+            .into(imageView)
 
         tvUserName.text = user.username ?: ""
-        tvStatus.text = user.status ?: ""
 
-        // RecyclerView (id is messagesRecyclerView)
+        // REALTIME STATUS
+        val friendId = user.userid ?: return
+        observeUserStatus(friendId, tvStatus)
+
+        // RecyclerView
         adapter = MessageAdapter()
-        binding.messagesRecyclerView.layoutManager = LinearLayoutManager(requireContext()).apply {
-            stackFromEnd = true
-        }
+        binding.messagesRecyclerView.layoutManager =
+            LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
         binding.messagesRecyclerView.adapter = adapter
 
         val senderId = Utils.getUidLoggedIn()
 
-        // Send
         binding.sendBtn.setOnClickListener {
             viewModel.sendMessage(
                 senderId,
-                user.userid ?: return@setOnClickListener,
+                friendId,
                 user.username ?: "",
                 user.imageUrl ?: ""
             )
         }
 
-        // Observe messages
-        val friendId = user.userid ?: return
         viewModel.getMessages(friendId).observe(viewLifecycleOwner) { list: List<Messages> ->
             adapter.setList(list)
         }
+    }
+
+    // ---------------- REALTIME DATABASE STATUS ----------------
+
+    private fun observeUserStatus(
+        userId: String,
+        statusTextView: TextView
+    ) {
+        val statusRef = FirebaseDatabase.getInstance()
+            .getReference("status")
+            .child(userId)
+
+        statusRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val status = snapshot.getValue(String::class.java)
+                statusTextView.text =
+                    if (status == "Online") "Online" else "Offline"
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                statusTextView.text = "Offline"
+            }
+        })
     }
 }

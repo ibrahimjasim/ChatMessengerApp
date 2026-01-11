@@ -107,7 +107,7 @@ class HomeFragment : Fragment(), OnItemClickListener {
         viewModel.getUsers().observe(viewLifecycleOwner) { users ->
             // Pass the live list to BOTH adapters.
             adapter.setList(users)
-            recentAdapter.setUsersList(users) // This updates the recent chats list status
+
         }
 
         viewModel.getRecentUsers().observe(viewLifecycleOwner) { chats ->
